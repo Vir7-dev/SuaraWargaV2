@@ -1,0 +1,190 @@
+<?php
+session_start();
+
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !='kandidat') {
+    header("Location: ../login.php");
+    exit;
+}
+
+require_once '../koneksi.php';
+try {
+    // Gunakan $pdo->query() jika tidak ada input user (SELECT murni)
+    $stmt = $pdo->prepare("
+    SELECT
+        k.visi,
+        k.misi,
+        k.foto_profil,
+        k.id_kandidat,
+        p.nama,
+        p.pendidikan,
+        p.pekerjaan,
+        p.alamat,
+        pr.nama_periode,
+        k.pengguna_id
+    FROM kandidat k
+    JOIN pengguna p ON k.pengguna_id = p.id
+    JOIN periode pr ON k.id_periode = pr.id_periode
+    WHERE k.pengguna_id = :user_id
+");
+
+    $stmt->execute([
+        'user_id' => $_SESSION['user_id']
+    ]);
+
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Tangani error pengambilan data
+    $error_fetch = "Gagal mengambil data periode.";
+    $data = [];
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile </title>
+    <link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="import" href="navbar.php">
+    <link rel="stylesheet" href="../fontawesome/css/all.min.css">
+</head>
+
+<body class="bg">
+    <!-- Navbar -->
+    <div class="container mb-5">
+        <nav class="navbar navbar-expand-lg mt-2 mb-5">
+            <div class="container d-flex align-items-center">
+
+                <!-- Logo -->
+                <a class="navbar-brand" href="#">
+                    <img src="../assets/img/logo1.png" alt="Logo" style="width:170px;">
+                </a>
+
+                <!-- Toggle button -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Menu -->
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">
+                        <li class="nav-item">
+                            <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house-user me-2"></i>BERANDA</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-keluar" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>KELUAR</a>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </nav>
+    </div>
+    <!-- Card Kandidat -->
+    <div class="container  mb-5">
+        <div class="row p-3 py-4 rounded-4 card-bg">
+            <!-- Profil -->
+            <div class="col-lg-3 col-12">
+                <img src="../assets/img/Avatar Vektor Pengguna, Clipart Manusia, Pengguna Perempuan, Ikon PNG dan Vektor dengan Background Transparan untuk Unduh Gratis 6.png" class="rounded-4 d-block mx-auto mb-3 img-fit" alt="...">
+                <p class="card-title poppins-semibold">Nama</p>
+                <p class="card-text">Momo Hirai</p>
+                <hr>
+                <p class="card-text poppins-semibold">Pendidikan</p>
+                <p class="card-text">Diploma IV</p>
+                <hr>
+                <p class="card-title poppins-semibold">Pekerjaan</p>
+                <p class="card-text">Wiraswasta</p>
+                <hr>
+                <p class="card-title poppins-semibold">Alamat</p>
+                <p class="card-text">Buana Vista Indah 2 Blok A No.48</p><br>
+                <div class="d-grid gap-1">
+                    <a href="#" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-ubah-profil-<?= htmlspecialchars($data['id_kandidat']); ?>">UBAH PROFIL
+                        KANDIDAT</a>
+                </div>
+            </div>
+            <!-- Visi Misi -->
+            <div class="col-lg-9 col-12 ms-auto mt-4 text-putih">
+                <h4 class="poppins-semibold  text-putih mb-3">Visi & Misi</h4>
+                <hr>
+
+                <div class="mb-4 text-putih ">
+                    <h5 class="text-uppercase poppins-semibold text-putih">Visi</h5>
+                    <p class="text-text-putih ">
+                    <p><?= htmlspecialchars($data['visi']); ?></p>
+                    </p>
+                </div>
+
+                <div>
+                    <h5 class="text-uppercase poppins-semibold text-putih">Misi</h5>
+                    <p><?= nl2br(htmlspecialchars($data['misi'])); ?></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <!-- Modal -->
+    <div class="container">
+        <div class="modal fade" id="modal-keluar" tabindex="-1" aria-labelledby="keluar" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content bg-putih">
+                    <div class="modal-body">
+                        <div class="text-end">
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="container-fluid">
+                            <div class="row">
+                                <h5 class="text-center mt-0 mb-3">Apakah Anda ingin keluar dari website <b>Suara
+                                        Warga</b>?</h5>
+                                <div class="d-grid">
+                                    <button type="button" onclick="window.location.href='../login.php'" class="btn btn-dark border-0">YA</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="modal-ubah-profil-<?= htmlspecialchars($data['id_kandidat']); ?>" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-xl">
+                <div class="modal-content rounded-4 bg-putih">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5">Formulir Profil Kandidat</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="ubah_profil.php" method="POST">
+                            <input type="hidden" name="pengguna_id" value="<?= htmlspecialchars($data['pengguna_id']); ?>">
+                            <div class="mb-3">
+                                <label class="col-form-label">Foto <span class="text-danger"></span></label>
+                                <input type="file" name="foto_profil" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label for="message-text" class="col-form-label">Visi : <span
+                                        class="text-danger">*</span></label>
+                                <textarea class="form-control " id="visi"
+                                    style="height: 200px;" name="visi"><?= htmlspecialchars($data['visi']); ?></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="message-text" class="col-form-label">Misi : <span
+                                        class="text-danger">*</span></label>
+                                <textarea class="form-control " id="misi-text"
+                                    style="height: 200px;" name="misi"><?= htmlspecialchars($data['misi']); ?></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success">Simpan</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script src="../bootstrap/js/bootstrap.bundle.js"></script>
+</body>
+
+</html>
