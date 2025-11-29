@@ -32,6 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['user_name'] = $data['nama'];
         $_SESSION['user_role'] = $data['role'];
 
+        unset($_SESSION['reset_nik']);
+
         // Redirect berdasarkan role
         if ($data['role'] === 'panitia') {
           header("Location: panitia/index.php");
@@ -43,6 +45,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
       } else {
         $error = "NIK atau Password salah.";
+        $_SESSION['reset_nik'] = $nik; // simpan nik untuk reset password
       }
     } catch (PDOException $e) {
       $error = "Terjadi kesalahan database.";
@@ -96,6 +99,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             required />
 
           <button type="submit" class="btn btn-dark w-100">LOG IN</button>
+          <?php if (!empty($error)): ?>
+            <div class="text-center mt-2">
+              <a href="reset-password.php" class="text-white text-decoration-underline">Lupa Password?</a>
+            </div>
+          <?php endif; ?>
         </form>
       </div>
     </div>
@@ -127,25 +135,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       </div>
     </div>
   </div>
+  <script>
+    const nikInput = document.getElementById("nik_input");
+    const passwordInput = document.getElementById("password_input");
+
+    nikInput.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        passwordInput.focus();
+      }
+    });
+
+    passwordInput.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        nikInput.focus();
+      }
+    });
+  </script>
 </body>
-
-<script>
-  const nikInput = document.getElementById("nik_input");
-  const passwordInput = document.getElementById("password_input");
-
-  nikInput.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      passwordInput.focus();
-    }
-  });
-
-  passwordInput.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      nikInput.focus();
-    }
-  });
-</script>
 
 </html>
