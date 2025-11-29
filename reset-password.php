@@ -39,6 +39,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="fontawesome/css/all.min.css">
     <link rel="stylesheet" href="style.css" />
+
+    <style>
+        .toast-progress {
+            height: 4px;
+            width: 100%;
+            background: linear-gradient(90deg, #0c8254, #4cc790, #d8e9d4);
+            animation: shrink 3s linear forwards;
+            border-radius: 0 0 5px 5px;
+        }
+
+        @keyframes shrink {
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
+        }
+    </style>
 </head>
 
 <body class="bg">
@@ -81,6 +101,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <div class="toast-body">
                     Password berhasil diubah! Anda akan segera diarahkan ke halaman Login.
                 </div>
+                <div class="toast-progress"></div>
             </div>
         </div>
     <?php unset($_SESSION['reset_success']);
@@ -91,21 +112,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            const toastEl = document.getElementById('resetSuccessToast');
+            const toastElement = document.getElementById('resetSuccessToast');
+            const toast = new bootstrap.Toast(toastElement, {
+                delay: 3000
+            });
 
-            if (toastEl) {
-                // Auto hide setelah 3 detik
-                setTimeout(() => {
-                    const toast = bootstrap.Toast.getOrCreateInstance(toastEl);
-                    toast.hide();
-                }, 2500);
+            toast.show();
 
-                // Redirect 0.5 detik setelah toast hide
-                setTimeout(() => {
-                    window.location.href = "login.php";
-                }, 2750);
-            }
+            setTimeout(() => {
+                window.location.href = "login.php";
+            }, 3250);
         });
     </script>
-
 </body>
