@@ -57,6 +57,7 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
     <link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="../fontawesome/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
@@ -344,32 +345,74 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
                             <div class="row">
                                 <h5 class="text-center mt-0 mb-3">Ini adalah token Anda. <b>Harap simpan dengan baik</b>
                                     dan jangan dibagikan kepada orang lain!</h5>
-                                <div class="d-grid">
-                                    <button type="button" class="btn btn-dark border-0"><i class="fa-solid fa-copy"></i>
-                                        15042007</button>
-                                </div>
+                            <div class="d-grid">
+                                <button type="button" id="btn-copy-token" class="btn btn-dark border-0">
+                                    <i class="fa-solid fa-spinner fa-spin" id="loading-token"></i>
+                                    <span id="token-display">Memuat token...</span>
+                                </button>
                             </div>
+                            <small class="text-center mt-2 text-muted">Klik untuk menyalin token</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+    <!-- Modal Pilih Kandidat -->
+    <?php foreach ($periode_list as $data): ?>
+    <div class="modal fade" id="modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-putih rounded-4">
+                <div class="modal-body">
+                    <div class="text-end">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
 
-        <!-- Modal Keluar -->
-        <div class="modal fade" id="modal-keluar" tabindex="-1" aria-labelledby="keluar" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content bg-putih">
-                    <div class="modal-body">
-                        <div class="text-end">
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="text-center mb-3">
+                        Suara tidak dapat diubah setelah diberikan. Apakah yakin memilih?
+                    </h5>
+
+                    <div class="text-center mb-3">
+                        <strong><?= htmlspecialchars($data['nama']) ?></strong>
+                    </div>
+
+                    <form id="form-vote-<?= htmlspecialchars($data['id_kandidat']) ?>" onsubmit="return submitVote(event, '<?= htmlspecialchars($data['id_kandidat']) ?>')">
+                        <div class="d-grid gap-2">
+                            <input type="text" 
+                                name="token" 
+                                id="token-input-<?= htmlspecialchars($data['id_kandidat']) ?>"
+                                placeholder="Masukkan Token Anda"
+                                class="form-control text-center mb-2"
+                                required
+                                maxlength="8"
+                                pattern="[a-zA-Z0-9]{5,8}">
+
+                            <button type="submit" class="btn btn-dark border-0">
+                                <span class="btn-text">YA, PILIH</span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            </button>
                         </div>
-                        <div class="container-fluid">
-                            <div class="row">
-                                <h5 class="text-center mt-0 mb-3">Apakah Anda ingin keluar dari website <b>Suara
-                                        Warga</b>?</h5>
-                                <div class="d-grid">
-                                    <button type="button" onclick="window.location.href='../login.php'" class="btn btn-dark border-0">YA</button>
-                                </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endforeach; ?>
+                
+    <!-- Modal Keluar -->
+    <div class="modal fade" id="modal-keluar" tabindex="-1" aria-labelledby="keluar" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-putih">
+                <div class="modal-body">
+                    <div class="text-end">
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="container-fluid">
+                        <div class="row">
+                            <h5 class="text-center mt-0 mb-3">Apakah Anda ingin keluar dari website <b>Suara
+                                    Warga</b>?</h5>
+                            <div class="d-grid">
+                                <button type="button" onclick="window.location.href='../login.php'" class="btn btn-dark border-0">YA</button>
                             </div>
                         </div>
                     </div>
@@ -377,14 +420,157 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Script -->
+<!-- Script -->
+<script>
+let userToken = null;
+
+// Ambil token saat modal dibuka
+document.getElementById('modal-ambil-token').addEventListener('show.bs.modal', function() {
+    if (userToken) {
+        displayToken(userToken);
+        return;
+    }
+    
+    fetch('ambil_token.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            userToken = data.token;
+            displayToken(data.token);
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: data.message
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Terjadi kesalahan saat mengambil token'
+        });
+    });
+});
+
+// Tampilkan token dan enable copy
+function displayToken(token) {
+    document.getElementById('loading-token').classList.add('d-none');
+    document.getElementById('token-display').innerHTML = `<i class="fa-solid fa-copy me-2"></i>${token}`;
+    
+    document.getElementById('btn-copy-token').onclick = function() {
+        copyToClipboard(token);
+    };
+}
+
+// Copy token ke clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        Swal.fire({
+            icon: 'success',
+            title: 'Tersalin!',
+            text: 'Token berhasil disalin ke clipboard',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    }).catch(function(err) {
+        // Fallback untuk browser lama
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Tersalin!',
+            text: 'Token berhasil disalin',
+            timer: 1500,
+            showConfirmButton: false
+        });
+    });
+}
+    // Submit voting
+function submitVote(event, kandidatId) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const spinner = submitBtn.querySelector('.spinner-border');
+    const tokenInput = form.querySelector('input[name="token"]');
+    
+    // Disable button dan tampilkan loading
+    submitBtn.disabled = true;
+    btnText.classList.add('d-none');
+    spinner.classList.remove('d-none');
+    
+    const formData = new FormData();
+    formData.append('kandidat_id', kandidatId);
+    formData.append('token', tokenInput.value);
+    
+    fetch('proses_vote.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: data.message,
+                confirmButtonText: 'OK'
+            }).then(() => {
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: data.message
+            });
+            
+            // Reset button
+            submitBtn.disabled = false;
+            btnText.classList.remove('d-none');
+            spinner.classList.add('d-none');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Terjadi kesalahan saat memproses voting'
+        });
+        
+        // Reset button
+        submitBtn.disabled = false;
+        btnText.classList.remove('d-none');
+        spinner.classList.add('d-none');
+    });
+    
+    return false;
+}
+    </script>
     <script src="../bootstrap/js/bootstrap.bundle.js"></script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>
         AOS.init();
     </script>
     <script src="../script.js"></script>
-</body>
 
+</body>
+    
 </html>
