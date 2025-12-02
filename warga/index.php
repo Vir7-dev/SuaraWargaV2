@@ -129,9 +129,9 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
 
                                 <hr>
                                 <p class="card-title poppins-semibold">Pekerjaan</p>
-                                <p class="card-text"><?= htmlspecialchars($data['pekerjaan']) ?>
+                                <p class="card-text"><?= htmlspecialchars($data['pekerjaan']) ?></p>
 
-                                    <hr>
+                                <hr>
                                 <p class="card-title poppins-semibold">Alamat</p>
                                 <p class="card-text"><?= htmlspecialchars($data['alamat']) ?></p><br>
 
@@ -141,17 +141,11 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
                                         data-bs-target="#modal-profil-<?= htmlspecialchars($data['id_kandidat']) ?>">
                                         TAMPILKAN LEBIH
                                     </a>
-
-                                    <!-- Modal Pilih -->
-                                    <a href="#" class="btn btn-dark" data-bs-toggle="modal"
-                                        data-bs-target="#modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>">
-                                        PILIH
-                                    </a>
                                 </div>
                             </div>
                         </div>
-                    </div>
-
+                    </div>           
+                                    
                     <!-- Modal Kandidat -->
                     <div class="modal fade" id="modal-profil-<?= htmlspecialchars($data['id_kandidat']) ?>" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -238,7 +232,6 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
 
                                         <button class="btn btn-dark border-0">YA</button>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
@@ -331,6 +324,7 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
             </div>
         </div>
     </div>
+
     <!-- Modal -->
     <div class="container">
         <!-- Modal Ambil Token -->
@@ -358,6 +352,7 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
             </div>
         </div>
     </div>
+
     <!-- Modal Pilih Kandidat -->
     <?php foreach ($periode_list as $data): ?>
     <div class="modal fade" id="modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>" tabindex="-1">
@@ -382,8 +377,7 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
                                 name="token" 
                                 id="token-input-<?= htmlspecialchars($data['id_kandidat']) ?>"
                                 placeholder="Masukkan Token Anda"
-                                class="form-control text-center mb-2"
-                                required
+                                class="form-control text-center mb-2" required
                                 maxlength="8"
                                 pattern="[a-zA-Z0-9]{5,8}">
 
@@ -437,7 +431,8 @@ document.getElementById('modal-ambil-token').addEventListener('show.bs.modal', f
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
-        }
+        },
+        credentials: 'same-origin' 
     })
     .then(response => response.json())
     .then(data => {
@@ -519,7 +514,7 @@ function submitVote(event, kandidatId) {
     formData.append('kandidat_id', kandidatId);
     formData.append('token', tokenInput.value);
     
-    fetch('proses_vote.php', {
+    fetch('proses_pilih.php', {
         method: 'POST',
         body: formData
     })

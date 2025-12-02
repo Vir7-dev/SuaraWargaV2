@@ -12,6 +12,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] != 'warga') {
 
 $user_id = $_SESSION['user_id'];
 
+// Cek 0: Ambil dari session jika sudah ada
+if (isset($_SESSION['token_unik'])) {
+     echo json_encode([
+         'success' => true,
+         'token' => $_SESSION['token_unik'],
+         'message' => 'Token Anda telah tersimpan di sesi.'
+     ]);
+     exit;
+}
+
 try {
     // CEK 1: Apakah user sudah pernah voting?
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM suara WHERE pengguna_id = ?");
@@ -28,7 +38,7 @@ try {
     }
     
     // CEK 2: Apakah user sudah pernah mengambil token?
-    $stmt = $pdo->prepare("SELECT token_unik, status_pengambilan FROM token WHERE pengguna_id = ?");
+    $stmt = $pdo->prepare("SELECT token_unik, status_pengambilan FROM token WHERE id_pengguna = ?");
     $stmt->execute([$user_id]);
     $existing_token = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -43,7 +53,7 @@ try {
     }
     
     // CEK 3: Ambil 1 token yang masih belum diambil siapapun
-    $stmt = $pdo->query("SELECT id, token_unik FROM token WHERE status_pengambilan = 'belum' AND pengguna_id IS NULL ORDER BY RAND() LIMIT 1");
+    $stmt = $pdo->query("SELECT id, token_unik FROM token WHERE status_pengambilan = 'belum' AND id_pengguna IS NULL ORDER BY RAND() LIMIT 1");
     $token_data = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$token_data) {
@@ -57,7 +67,7 @@ try {
     // UPDATE: Assign token ke user ini
     $stmt = $pdo->prepare("UPDATE token SET 
         status_pengambilan = 'sudah', 
-        pengguna_id = ?,
+        id_pengguna = ?,
         waktu_diambil = NOW(),
         updated_at = NOW() 
         WHERE id = ?");
