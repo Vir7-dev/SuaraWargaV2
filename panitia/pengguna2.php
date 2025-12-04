@@ -663,6 +663,26 @@ try {
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="modal-import" tabindex="-1">
+            <div class="modal-dialog">
+                <form action="import.php" method="POST" enctype="multipart/form-data">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">Import Data Excel</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <label>Upload File Excel (.xlsx / .xls)</label>
+                            <input type="file" name="file_excel" class="form-control" accept=".xlsx,.xls" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-upload me-1"></i> Import</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="../bootstrap/js/bootstrap.bundle.js"></script>
