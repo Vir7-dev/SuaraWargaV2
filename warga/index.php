@@ -16,7 +16,7 @@ if (!empty($_SESSION['reset_error'])) {
 require_once '../koneksi.php';
 
 // Inisialisasi variabel default
-$periode_list = [];
+$pengguna_list = [];
 $suara = [];
 $kandidat_ids = [];
 $pengguna_id = [];
@@ -27,9 +27,11 @@ try {
     // Query kandidat - HAPUS TITIK KOMA DI AKHIR
     $stmt = $pdo->query("SELECT
         k.visi,
+        k.foto_profil,
         k.misi,
         k.foto_profil,
         k.id_kandidat,
+        k.no_kandidat,
         p.nama,
         p.pendidikan,
         p.pekerjaan,
@@ -37,9 +39,10 @@ try {
         pr.nama_periode
     FROM kandidat k
     JOIN pengguna p ON k.pengguna_id = p.id
-    JOIN periode pr ON k.id_periode = pr.id_periode");
+    JOIN periode pr ON k.id_periode = pr.id_periode
+    WHERE pr.status_periode = 'aktif'");
     
-    $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // JUMLAH SUARA
     $stmt_suara = $pdo->query("SELECT 
@@ -146,23 +149,27 @@ try {
 
     <!-- Card Kandidat -->
     <div class="container mb-5">
-        <h2 class="text-center poppins-bold mb-5">Pemilihan Ketua RT Periode 2025–2026</h2>
+        <?php if (!empty($pengguna_list)): ?>
+            <h2 class="text-center poppins-bold mb-5"><?= ($pengguna_list[0]['nama_periode']) ?></h2>
+        <?php else: ?>
+            <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dimulai</h2>
+        <?php endif; ?>
         <div class="row mb-5">
 
-            <?php if (!empty($periode_list)): ?>
-                <?php foreach ($periode_list as $data): ?>
+            <?php if (!empty($pengguna_list)): ?>
+                <?php foreach ($pengguna_list as $data): ?>
                     <div data-aos="flip-right" class="col-lg-3 col-md-5 col-11 mx-auto">
                         <div class="card rounded-4 card-bg mb-5">
 
                             <!-- Foto Kandidat -->
-                            <img src="../assets/img/photo.png"
+                            <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                 class="card-img-top p-3 img-fit"
                                 style="border-radius: 26px;"
                                 alt="Foto Kandidat">
 
                             <div class="card-body">
                                 <h1 class="card-title poppins-semibold">
-                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                 </h1>
 
                                 <hr>
@@ -175,9 +182,9 @@ try {
 
                                 <hr>
                                 <p class="card-title poppins-semibold">Pekerjaan</p>
-                                <p class="card-text"><?= htmlspecialchars($data['pekerjaan']) ?></p>
+                                <p class="card-text"><?= htmlspecialchars($data['pekerjaan']) ?>
 
-                                <hr>
+                                    <hr>
                                 <p class="card-title poppins-semibold">Alamat</p>
                                 <p class="card-text"><?= htmlspecialchars($data['alamat']) ?></p><br>
 
@@ -186,6 +193,12 @@ try {
                                     <a href="#" class="btn btn-dark" data-bs-toggle="modal"
                                         data-bs-target="#modal-profil-<?= htmlspecialchars($data['id_kandidat']) ?>">
                                         TAMPILKAN LEBIH
+                                    </a>
+
+                                    <!-- Modal Pilih -->
+                                    <a href="#" class="btn btn-dark" data-bs-toggle="modal"
+                                        data-bs-target="#modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>">
+                                        PILIH
                                     </a>
                                 </div>
                             </div>
@@ -206,11 +219,11 @@ try {
 
                                             <!-- Kiri -->
                                             <div class="col-lg-3 col-12">
-                                                <img src="../assets/img/photo.png"
+                                                <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                                     class="rounded-4 d-block mx-auto mb-3 img-fit">
 
                                                 <h1 class="card-title poppins-semibold">
-                                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                                 </h1>
 
                                                 <hr>
@@ -278,6 +291,7 @@ try {
 
                                         <button class="btn btn-dark border-0">YA</button>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -292,9 +306,11 @@ try {
 
     <!-- Diagram -->
     <div class="container col-lg-12 col-10 mb-5">
-        <h2 class="text-center poppins-bold mb-5">
-            Hasil Sementara Pemilihan Ketua RT Periode 2025–2026
-        </h2>
+        <?php if (!empty($pengguna_list)): ?>
+            <h2 class="text-center poppins-bold mb-5">Hasil <?= ($pengguna_list[0]['nama_periode']) ?></h2>
+        <?php else: ?>
+            <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dihitung</h2>
+        <?php endif; ?>
         <div class="row p-3 py-4 gap-4 gap-md-0 rounded-4 card-bg">
             <div class="col-12 flex-md-row flex-column d-flex justify-content-between align-items-center mb-3">
                 <h2 class="text-left poppins-bold text-putih">Hasil Pemilihan</h2>
@@ -449,7 +465,7 @@ try {
         </div>
 
         <!-- Modal Pilih Kandidat -->
-        <?php foreach ($periode_list as $data): ?>
+        <?php foreach ($pengguna_list as $data): ?>
             <div class="modal fade" id="modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content bg-putih rounded-4">
