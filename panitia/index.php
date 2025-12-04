@@ -89,6 +89,9 @@ try {
                             <a href="periode.php" class="btn btn-dark"><i class="fa-solid fa-calendar-day me-2"></i>PERIODE</a>
                         </li>
                         <li class="nav-item">
+                            <a class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-reset-password" href="#"><i class="fa-solid fa-key me-2"></i>RESET PASSWORD</a>
+                        </li>
+                        <li class="nav-item">
                             <a class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-keluar" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>KELUAR</a>
                         </li>
                     </ul>
@@ -97,6 +100,29 @@ try {
             </div>
         </nav>
     </div>
+
+    <!-- Alert Success/Error -->
+    <div class="container mb-4">
+        <!-- Error Alert -->
+        <?php if (!empty($error)): ?>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fa-solid fa-circle-exclamation me-2"></i>
+                <strong>Error!</strong> <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <?php endif; ?>
+
+        <!-- Success Alert -->
+        <?php if (isset($_SESSION['reset_success'])): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fa-solid fa-check-circle me-2"></i>
+                <strong>Berhasil!</strong> Password Anda telah diubah.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <?php unset($_SESSION['reset_success']); ?>
+        <?php endif; ?>
+    </div>
+
     <!-- Card Kandidat -->
     <div class="container mb-5">
         <h2 class="text-center poppins-bold mb-5">Pemilihan Ketua RT Periode 2025–2026</h2>
@@ -354,6 +380,55 @@ try {
                 </div>
             </div>
         </div>
+
+        <!-- Modal Reset Password -->
+        <div class="modal fade" id="modal-reset-password" tabindex="-1" aria-labelledby="reset-password" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-putih rounded-4">
+                    <div class="modal-body">
+                        <div class="text-end">
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+
+                        <div class="container-fluid">
+                            <div class="row">
+                                <h4 class="text-center mt-0 mb-3">
+                                    Ganti Password
+                                </h4>
+                                <p class="text-center text-muted mb-4">
+                                    Masukkan password baru Anda di bawah ini.
+                                </p>
+
+                                <form action="../reset-password.php" method="POST" class="px-3">
+                                    <label class="form-label fw-semibold">Password Baru</label>
+                                    <input type="password" name="password_baru"
+                                        class="form-control mb-2"
+                                        placeholder="Masukkan Password Baru (min. 6 karakter)"
+                                        minlength="6"
+                                        required>
+
+                                    <small class="text-muted d-block mb-3">
+                                        <i class="fa-solid fa-info-circle me-1"></i>
+                                        Password minimal 6 karakter
+                                    </small>
+
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-dark border-0 py-2">
+                                            <i class="fa-solid fa-key me-2"></i>Ganti Password
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <small class="text-center mt-3 text-muted d-block">
+                                    Pastikan password kuat dan mudah diingat 🔐
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="modal-keluar" tabindex="-1" aria-labelledby="keluar" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
                 <div class="modal-content bg-putih">
