@@ -195,6 +195,7 @@ try {
                                         TAMPILKAN LEBIH
                                     </a>
 
+                                    
                                     <!-- Modal Pilih -->
                                     <a href="#" class="btn btn-dark" data-bs-toggle="modal"
                                         data-bs-target="#modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>">
