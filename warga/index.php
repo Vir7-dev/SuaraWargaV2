@@ -41,7 +41,7 @@ try {
     JOIN pengguna p ON k.pengguna_id = p.id
     JOIN periode pr ON k.id_periode = pr.id_periode
     WHERE pr.status_periode = 'aktif'");
-    
+
     $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // JUMLAH SUARA
@@ -63,7 +63,6 @@ try {
         $pengguna_id  = array_column($suara, 'nama');
         $total_suara  = array_column($suara, 'total_suara');
     }
-    
 } catch (PDOException $e) {
     // Tangani error pengambilan data
     $error_fetch = "Gagal mengambil data: " . $e->getMessage();
@@ -195,12 +194,34 @@ try {
                                         TAMPILKAN LEBIH
                                     </a>
 
-                                    
-                                    <!-- Modal Pilih -->
-                                    <a href="#" class="btn btn-dark" data-bs-toggle="modal"
-                                        data-bs-target="#modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>">
-                                        PILIH
-                                    </a>
+                                    <?php
+                                    $user_id = $_SESSION['user_id'];
+
+                                    $stmt = $pdo->prepare("SELECT status_pilih FROM pengguna WHERE id = ?");
+                                    $stmt->execute([$user_id]);
+                                    $status_pilih = $stmt->fetchColumn();
+                                    ?>
+
+                                    <?php if ($status_pilih === 'sudah'): ?>
+
+                                        <!-- Jika sudah memilih -->
+                                        <a href="#" class="btn btn-secondary"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modal-sudah-vote">
+                                            PILIH
+                                        </a>
+
+                                    <?php else: ?>
+
+                                        <!-- Jika BELUM memilih -->
+                                        <a href="#" class="btn btn-dark"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>">
+                                            PILIH
+                                        </a>
+
+                                    <?php endif; ?>
+
                                 </div>
                             </div>
                         </div>
@@ -269,34 +290,7 @@ try {
                     </div>
 
                     <!-- Modal Kandidat -->
-                    <div class="modal fade" id="modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                            <div class="modal-content bg-putih rounded-4">
-                                <div class="modal-body">
 
-                                    <div class="text-end">
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-
-                                    <h5 class="text-center mb-3">
-                                        Suara tidak dapat diubah setelah diberikan. Apakah yakin memilih?
-                                    </h5>
-
-                                    <div class="text-center mb-3">
-                                        <strong><?= htmlspecialchars($data['nama']) ?></strong>
-                                    </div>
-
-                                    <div class="d-grid">
-                                        <input type="text" placeholder="Masukkan Token Anda"
-                                            class="btn btn-dark text-uppercase mb-2">
-
-                                        <button class="btn btn-dark border-0">YA</button>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 <?php endforeach; ?>
             <?php else: ?>
 
@@ -483,15 +477,24 @@ try {
                                 <strong><?= htmlspecialchars($data['nama']) ?></strong>
                             </div>
 
-                            <form id="form-vote-<?= htmlspecialchars($data['id_kandidat']) ?>" onsubmit="return submitVote(event, '<?= htmlspecialchars($data['id_kandidat']) ?>')">
+                            <form id="form-vote-<?= htmlspecialchars($data['id_kandidat']) ?>"
+                                action="pilih.php"
+                                method="POST">
+
                                 <div class="d-grid gap-2">
                                     <input type="text"
                                         name="token"
                                         id="token-input-<?= htmlspecialchars($data['id_kandidat']) ?>"
                                         placeholder="Masukkan Token Anda"
-                                        class="form-control text-center mb-2" required
+                                        class="form-control text-center mb-2"
+                                        required
                                         maxlength="8"
                                         pattern="[a-zA-Z0-9]{5,8}">
+
+                                    <!-- kandidat_id harus dikirim manual karena submitVote sudah dihapus -->
+                                    <input type="hidden"
+                                        name="kandidat_id"
+                                        value="<?= htmlspecialchars($data['id_kandidat']) ?>">
 
                                     <button type="submit" class="btn btn-dark border-0">
                                         <span class="btn-text">YA, PILIH</span>
@@ -499,6 +502,7 @@ try {
                                     </button>
                                 </div>
                             </form>
+
                         </div>
                     </div>
                 </div>
@@ -526,229 +530,261 @@ try {
                 </div>
             </div>
         </div>
-    </div>
+        <!-- Modal: Sudah Vote -->
+        <div class="modal fade" id="modal-sudah-vote" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow-lg">
 
-    <!-- Script -->
-    <!-- Script -->
-<script src="../bootstrap/js/bootstrap.bundle.js"></script>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script>
-    AOS.init();
-</script>
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-x-circle-fill"></i> Anda Sudah Memilih
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
 
-<script>
-    let userToken = null;
+                    <div class="modal-body text-center p-4">
+                        <i class="bi bi-emoji-smile fs-1 text-danger mb-3"></i>
+                        <p class="mb-0">
+                            Anda sudah melakukan voting sebelumnya.
+                            Terima kasih atas partisipasi Anda!
+                        </p>
+                    </div>
 
-    // Ambil token saat modal dibuka
-    document.getElementById('modal-ambil-token').addEventListener('show.bs.modal', function() {
-        // Reset display setiap kali modal dibuka
-        const btnCopy = document.getElementById('btn-copy-token');
-        const loading = document.getElementById('loading-token');
-        const display = document.getElementById('token-display');
-        
-        // Reset ke state awal
-        btnCopy.className = 'btn btn-dark border-0';
-        loading.classList.remove('d-none');
-        display.textContent = 'Memuat token...';
-        
-        if (userToken) {
-            displayToken(userToken);
-            return;
-        }
+                    <div class="modal-footer">
+                        <button class="btn btn-danger w-100" data-
 
-        fetch('ambil_token.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    userToken = data.token;
-                    displayToken(data.token);
-                } else {
-                    // Tampilkan error di dalam modal
-                    displayError(data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                displayError('Terjadi kesalahan saat mengambil token');
-            });
-    });
+                            </div>
 
-    // Tampilkan token dan enable copy
-    // Tampilkan token dan enable copy
-function displayToken(token) {
-    const loading = document.getElementById('loading-token');
-    const display = document.getElementById('token-display');
-    const btnCopy = document.getElementById('btn-copy-token');
-    const title = document.getElementById('modal-token-title');
-    const subtitle = document.getElementById('modal-token-subtitle');
-    
-    // Show title for success
-    if (title) {
-        title.innerHTML = 'Ini adalah token Anda. <b>Harap simpan dengan baik</b> dan jangan dibagikan kepada orang lain!';
-    }
-    
-    // Show subtitle
-    if (subtitle) {
-        subtitle.classList.remove('d-none');
-    }
-    
-    // Show button
-    if (btnCopy) {
-        btnCopy.classList.remove('d-none');
-        btnCopy.className = 'btn btn-dark border-0';
-    }
-    
-    if (loading) loading.classList.add('d-none');
-    if (display) display.innerHTML = `<i class="fa-solid fa-copy me-2"></i>${token}`;
-    
-    if (btnCopy) {
-        btnCopy.onclick = function() {
-            copyToClipboard(token);
-        };
-    }
-}
+                            <!-- Script -->
+                            <!-- Script -->
+                            <script src="../bootstrap/js/bootstrap.bundle.js"></script>
+                            <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+                            <script>
+                                AOS.init();
+                            </script>
 
-// Tampilkan error di dalam modal
-function displayError(message) {
-    const loading = document.getElementById('loading-token');
-    const display = document.getElementById('token-display');
-    const btnCopy = document.getElementById('btn-copy-token');
-    const title = document.getElementById('modal-token-title');
-    const subtitle = document.getElementById('modal-token-subtitle');
-    
-    // Change title for error
-    if (title) {
-        title.innerHTML = message;
-    }
-    
-    // Hide subtitle
-    if (subtitle) {
-        subtitle.classList.add('d-none');
-    }
-    
-    if (loading) loading.classList.add('d-none');
-    
-    // Hide the button completely
-    if (btnCopy) btnCopy.classList.add('d-none');
-    
-    // Clear the display area
-    if (display) {
-        display.innerHTML = '';
-    }
-}
+                            <script>
+                                let userToken = null;
 
-    // Copy token ke clipboard
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(function() {
-            // Tampilkan feedback sukses
-            const btnCopy = document.getElementById('btn-copy-token');
-            const originalHTML = btnCopy.innerHTML;
-            
-            btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
-            btnCopy.classList.add('btn-success');
-            btnCopy.classList.remove('btn-dark');
-            
-            setTimeout(() => {
-                btnCopy.innerHTML = originalHTML;
-                btnCopy.classList.remove('btn-success');
-                btnCopy.classList.add('btn-dark');
-            }, 1500);
-        }).catch(function(err) {
-            // Fallback untuk browser lama
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
+                                // Ambil token saat modal dibuka
+                                document.getElementById('modal-ambil-token').addEventListener('show.bs.modal', function() {
+                                    // Reset display setiap kali modal dibuka
+                                    const btnCopy = document.getElementById('btn-copy-token');
+                                    const loading = document.getElementById('loading-token');
+                                    const display = document.getElementById('token-display');
 
-            const btnCopy = document.getElementById('btn-copy-token');
-            const originalHTML = btnCopy.innerHTML;
-            
-            btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
-            btnCopy.classList.add('btn-success');
-            btnCopy.classList.remove('btn-dark');
-            
-            setTimeout(() => {
-                btnCopy.innerHTML = originalHTML;
-                btnCopy.classList.remove('btn-success');
-                btnCopy.classList.add('btn-dark');
-            }, 1500);
-        });
-    }
+                                    // Reset ke state awal
+                                    btnCopy.className = 'btn btn-dark border-0';
+                                    loading.classList.remove('d-none');
+                                    display.textContent = 'Memuat token...';
 
-    // Submit voting
-    function submitVote(event, kandidatId) {
-        event.preventDefault();
+                                    if (userToken) {
+                                        displayToken(userToken);
+                                        return;
+                                    }
 
-        const form = event.target;
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const btnText = submitBtn.querySelector('.btn-text');
-        const spinner = submitBtn.querySelector('.spinner-border');
-        const tokenInput = form.querySelector('input[name="token"]');
+                                    fetch('ambil_token.php', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            },
+                                            credentials: 'same-origin'
+                                        })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            if (data.success) {
+                                                userToken = data.token;
+                                                displayToken(data.token);
+                                            } else {
+                                                // Tampilkan error di dalam modal
+                                                displayError(data.message);
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error:', error);
+                                            displayError('Terjadi kesalahan saat mengambil token');
+                                        });
+                                });
 
-        // Disable button dan tampilkan loading
-        submitBtn.disabled = true;
-        btnText.classList.add('d-none');
-        spinner.classList.remove('d-none');
+                                // Tampilkan token dan enable copy
+                                // Tampilkan token dan enable copy
+                                function displayToken(token) {
+                                    const loading = document.getElementById('loading-token');
+                                    const display = document.getElementById('token-display');
+                                    const btnCopy = document.getElementById('btn-copy-token');
+                                    const title = document.getElementById('modal-token-title');
+                                    const subtitle = document.getElementById('modal-token-subtitle');
 
-        const formData = new FormData();
-        formData.append('kandidat_id', kandidatId);
-        formData.append('token', tokenInput.value);
+                                    // Show title for success
+                                    if (title) {
+                                        title.innerHTML = 'Ini adalah token Anda. <b>Harap simpan dengan baik</b> dan jangan dibagikan kepada orang lain!';
+                                    }
 
-        fetch('proses_pilih.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: data.message,
-                        confirmButtonText: 'OK'
-                    }).then(() => {
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message
-                    });
+                                    // Show subtitle
+                                    if (subtitle) {
+                                        subtitle.classList.remove('d-none');
+                                    }
 
-                    // Reset button
-                    submitBtn.disabled = false;
-                    btnText.classList.remove('d-none');
-                    spinner.classList.add('d-none');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Terjadi kesalahan saat memproses voting'
-                });
+                                    // Show button
+                                    if (btnCopy) {
+                                        btnCopy.classList.remove('d-none');
+                                        btnCopy.className = 'btn btn-dark border-0';
+                                    }
 
-                // Reset button
-                submitBtn.disabled = false;
-                btnText.classList.remove('d-none');
-                spinner.classList.add('d-none');
-            });
+                                    if (loading) loading.classList.add('d-none');
+                                    if (display) display.innerHTML = `<i class="fa-solid fa-copy me-2"></i>${token}`;
 
-        return false;
-    }
-</script>
-<script src="../script.js"></script>
-    <script src="../script.js"></script>
+                                    if (btnCopy) {
+                                        btnCopy.onclick = function() {
+                                            copyToClipboard(token);
+                                        };
+                                    }
+                                }
+
+                                // Tampilkan error di dalam modal
+                                function displayError(message) {
+                                    const loading = document.getElementById('loading-token');
+                                    const display = document.getElementById('token-display');
+                                    const btnCopy = document.getElementById('btn-copy-token');
+                                    const title = document.getElementById('modal-token-title');
+                                    const subtitle = document.getElementById('modal-token-subtitle');
+
+                                    // Change title for error
+                                    if (title) {
+                                        title.innerHTML = message;
+                                    }
+
+                                    // Hide subtitle
+                                    if (subtitle) {
+                                        subtitle.classList.add('d-none');
+                                    }
+
+                                    if (loading) loading.classList.add('d-none');
+
+                                    // Hide the button completely
+                                    if (btnCopy) btnCopy.classList.add('d-none');
+
+                                    // Clear the display area
+                                    if (display) {
+                                        display.innerHTML = '';
+                                    }
+                                }
+
+                                // Copy token ke clipboard
+                                function copyToClipboard(text) {
+                                    navigator.clipboard.writeText(text).then(function() {
+                                        // Tampilkan feedback sukses
+                                        const btnCopy = document.getElementById('btn-copy-token');
+                                        const originalHTML = btnCopy.innerHTML;
+
+                                        btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
+                                        btnCopy.classList.add('btn-success');
+                                        btnCopy.classList.remove('btn-dark');
+
+                                        setTimeout(() => {
+                                            btnCopy.innerHTML = originalHTML;
+                                            btnCopy.classList.remove('btn-success');
+                                            btnCopy.classList.add('btn-dark');
+                                        }, 1500);
+                                    }).catch(function(err) {
+                                        // Fallback untuk browser lama
+                                        const textarea = document.createElement('textarea');
+                                        textarea.value = text;
+                                        document.body.appendChild(textarea);
+                                        textarea.select();
+                                        document.execCommand('copy');
+                                        document.body.removeChild(textarea);
+
+                                        const btnCopy = document.getElementById('btn-copy-token');
+                                        const originalHTML = btnCopy.innerHTML;
+
+                                        btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
+                                        btnCopy.classList.add('btn-success');
+                                        btnCopy.classList.remove('btn-dark');
+
+                                        setTimeout(() => {
+                                            btnCopy.innerHTML = originalHTML;
+                                            btnCopy.classList.remove('btn-success');
+                                            btnCopy.classList.add('btn-dark');
+                                        }, 1500);
+                                    });
+                                }
+
+                                // Submit voting
+                                function submitVote(event, kandidatId) {
+                                    event.preventDefault();
+
+                                    const form = event.target;
+                                    const submitBtn = form.querySelector('button[type="submit"]');
+                                    const btnText = submitBtn.querySelector('.btn-text');
+                                    const spinner = submitBtn.querySelector('.spinner-border');
+                                    const tokenInput = form.querySelector('input[name="token"]');
+
+                                    // Disable button dan tampilkan loading
+                                    submitBtn.disabled = true;
+                                    btnText.classList.add('d-none');
+                                    spinner.classList.remove('d-none');
+
+                                    const formData = new FormData();
+                                    formData.append('kandidat_id', kandidatId);
+                                    formData.append('token', tokenInput.value);
+
+                                    fetch('pilih.php', {
+                                            method: 'POST',
+                                            body: formData
+                                        })
+                                        .then(async response => {
+                                            const text = await response.text(); // Ambil response mentah
+                                            try {
+                                                return JSON.parse(text); // Coba parse JSON
+                                            } catch (e) {
+                                                console.error("Response bukan JSON:", text);
+                                                throw new Error("Server tidak mengembalikan JSON yang valid");
+                                            }
+                                        })
+                                        .then(data => {
+                                            if (data.success) {
+                                                Swal.fire({
+                                                    icon: 'success',
+                                                    title: 'Berhasil!',
+                                                    text: data.message,
+                                                    confirmButtonText: 'OK'
+                                                }).then(() => {
+                                                    location.reload();
+                                                });
+                                            } else {
+                                                Swal.fire({
+                                                    icon: 'error',
+                                                    title: 'Gagal',
+                                                    text: data.message
+                                                });
+                                            }
+
+                                            // Reset button
+                                            submitBtn.disabled = false;
+                                            btnText.classList.remove('d-none');
+                                            spinner.classList.add('d-none');
+                                        })
+                                        .catch(error => {
+                                            console.error("Error:", error);
+
+                                            Swal.fire({
+                                                icon: 'error',
+                                                title: 'Error',
+                                                text: 'Terjadi kesalahan saat memproses voting.'
+                                            });
+
+                                            // Reset button
+                                            submitBtn.disabled = false;
+                                            btnText.classList.remove('d-none');
+                                            spinner.classList.add('d-none');
+                                        });
+
+                                    return false;
+                                }
+                            </script>
+                            <script src="../script.js"></script>
+                            <script src="../script.js"></script>
 
 </body>
 
