@@ -2,12 +2,9 @@
 session_start();
 require_once 'koneksi.php';
 
-// definisikan variabel supaya tidak undefined
+// Definisikan variabel supaya tidak undefined
 $nik = '';
-$error = $_GET['error'] ?? '';
-if (!empty($error)) {
-  $error = urldecode($error);
-}
+$error = '';
 
 // Proses jika POST request
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -31,8 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['user_id'] = $data['id'];
         $_SESSION['user_name'] = $data['nama'];
         $_SESSION['user_role'] = $data['role'];
-
-        unset($_SESSION['reset_nik']);
+        $_SESSION['nik'] = $nik; // PENTING: Simpan NIK untuk reset password
 
         // Redirect berdasarkan role
         if ($data['role'] === 'panitia') {
@@ -45,23 +41,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
       } else {
         $error = "NIK atau Password salah.";
-        $_SESSION['reset_nik'] = $nik; // simpan nik untuk reset password
       }
     } catch (PDOException $e) {
       $error = "Terjadi kesalahan database.";
     }
   }
-
-  // Redirect kembali ke login dengan error
-  if (!empty($error)) {
-    header("Location: login.php?error=" . urlencode($error));
-    exit;
-  }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
   <meta charset="UTF-8" />
@@ -80,7 +69,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <?php if (!empty($error)): ?>
           <div class="alert alert-danger" role="alert">
-            <?= $error ?>
+            <?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?>
           </div>
         <?php endif; ?>
 
@@ -99,11 +88,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             required />
 
           <button type="submit" class="btn btn-dark w-100">LOG IN</button>
-          <?php if (!empty($error)): ?>
-            <div class="text-center mt-2">
-              <a href="reset-password.php" class="text-white text-decoration-underline">Lupa Password?</a>
-            </div>
-          <?php endif; ?>
         </form>
       </div>
     </div>
@@ -113,28 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </div>
   </div>
 
-  <!-- Modal -->
-  <div class="modal fade" id="errorModal" tabindex="-1">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Peringatan</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <?php
-          if (isset($_SESSION['error'])) {
-            echo htmlspecialchars($_SESSION['error']);
-            unset($_SESSION['error']); // hapus agar tidak muncul lagi
-          }
-          ?>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <script src="bootstrap/js/bootstrap.bundle.min.js"></script>
   <script>
     const nikInput = document.getElementById("nik_input");
     const passwordInput = document.getElementById("password_input");
@@ -154,5 +117,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     });
   </script>
 </body>
-
 </html>
