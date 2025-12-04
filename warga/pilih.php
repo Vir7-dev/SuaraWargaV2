@@ -2,7 +2,7 @@
 session_start();
 require '../koneksi.php';
 
-header('Content-Type: application/json');
+
 
 // Pastikan user login
 if (!isset($_SESSION['user_id'])) {
@@ -114,9 +114,6 @@ $stmt->execute([$_SESSION['user_id']]);
 /* =======================================================
    RESPONSE BERHASIL
 ========================================================= */
-echo json_encode([
-    "success" => true,
-    "message" => "Terima kasih, suara Anda sudah direkam.",
-    "redirect" => "index.php"
-]);
+echo "<script>alert('Terima kasih, suara Anda sudah direkam.'); window.location='index.php';</script>";
+
 exit;
