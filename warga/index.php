@@ -383,15 +383,16 @@ try {
                         </div>
                         <div class="container-fluid">
                             <div class="row">
-                                <h5 class="text-center mt-0 mb-3">Ini adalah token Anda. <b>Harap simpan dengan baik</b>
-                                    dan jangan dibagikan kepada orang lain!</h5>
+                                <h5 class="text-center mt-0 mb-3" id="modal-token-title">
+                                    Ini adalah token Anda. <b>Harap simpan dengan baik</b> dan jangan dibagikan kepada orang lain!
+                                </h5>
                                 <div class="d-grid">
                                     <button type="button" id="btn-copy-token" class="btn btn-dark border-0">
                                         <i class="fa-solid fa-spinner fa-spin" id="loading-token"></i>
                                         <span id="token-display">Memuat token...</span>
                                     </button>
                                 </div>
-                                <small class="text-center mt-2 text-muted">Klik untuk menyalin token</small>
+                                <small class="text-center mt-2 text-muted" id="modal-token-subtitle">Klik untuk menyalin token</small>
                             </div>
                         </div>
                     </div>
@@ -511,153 +512,225 @@ try {
     </div>
 
     <!-- Script -->
-    <script>
-        let userToken = null;
+    <!-- Script -->
+<script src="../bootstrap/js/bootstrap.bundle.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+    AOS.init();
+</script>
 
-        // Ambil token saat modal dibuka
-        document.getElementById('modal-ambil-token').addEventListener('show.bs.modal', function() {
-            if (userToken) {
-                displayToken(userToken);
-                return;
-            }
+<script>
+    let userToken = null;
 
-            fetch('ambil_token.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        userToken = data.token;
-                        displayToken(data.token);
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: data.message
-                        });
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Terjadi kesalahan saat mengambil token'
-                    });
-                });
-        });
-
-        // Tampilkan token dan enable copy
-        function displayToken(token) {
-            document.getElementById('loading-token').classList.add('d-none');
-            document.getElementById('token-display').innerHTML = `<i class="fa-solid fa-copy me-2"></i>${token}`;
-
-            document.getElementById('btn-copy-token').onclick = function() {
-                copyToClipboard(token);
-            };
+    // Ambil token saat modal dibuka
+    document.getElementById('modal-ambil-token').addEventListener('show.bs.modal', function() {
+        // Reset display setiap kali modal dibuka
+        const btnCopy = document.getElementById('btn-copy-token');
+        const loading = document.getElementById('loading-token');
+        const display = document.getElementById('token-display');
+        
+        // Reset ke state awal
+        btnCopy.className = 'btn btn-dark border-0';
+        loading.classList.remove('d-none');
+        display.textContent = 'Memuat token...';
+        
+        if (userToken) {
+            displayToken(userToken);
+            return;
         }
 
-        // Copy token ke clipboard
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(function() {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Tersalin!',
-                    text: 'Token berhasil disalin ke clipboard',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            }).catch(function(err) {
-                // Fallback untuk browser lama
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Tersalin!',
-                    text: 'Token berhasil disalin',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
+        fetch('ambil_token.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    userToken = data.token;
+                    displayToken(data.token);
+                } else {
+                    // Tampilkan error di dalam modal
+                    displayError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                displayError('Terjadi kesalahan saat mengambil token');
             });
-        }
-        // Submit voting
-        function submitVote(event, kandidatId) {
-            event.preventDefault();
+    });
 
-            const form = event.target;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const btnText = submitBtn.querySelector('.btn-text');
-            const spinner = submitBtn.querySelector('.spinner-border');
-            const tokenInput = form.querySelector('input[name="token"]');
+    // Tampilkan token dan enable copy
+    // Tampilkan token dan enable copy
+function displayToken(token) {
+    const loading = document.getElementById('loading-token');
+    const display = document.getElementById('token-display');
+    const btnCopy = document.getElementById('btn-copy-token');
+    const title = document.getElementById('modal-token-title');
+    const subtitle = document.getElementById('modal-token-subtitle');
+    
+    // Show title for success
+    if (title) {
+        title.innerHTML = 'Ini adalah token Anda. <b>Harap simpan dengan baik</b> dan jangan dibagikan kepada orang lain!';
+    }
+    
+    // Show subtitle
+    if (subtitle) {
+        subtitle.classList.remove('d-none');
+    }
+    
+    // Show button
+    if (btnCopy) {
+        btnCopy.classList.remove('d-none');
+        btnCopy.className = 'btn btn-dark border-0';
+    }
+    
+    if (loading) loading.classList.add('d-none');
+    if (display) display.innerHTML = `<i class="fa-solid fa-copy me-2"></i>${token}`;
+    
+    if (btnCopy) {
+        btnCopy.onclick = function() {
+            copyToClipboard(token);
+        };
+    }
+}
 
-            // Disable button dan tampilkan loading
-            submitBtn.disabled = true;
-            btnText.classList.add('d-none');
-            spinner.classList.remove('d-none');
+// Tampilkan error di dalam modal
+function displayError(message) {
+    const loading = document.getElementById('loading-token');
+    const display = document.getElementById('token-display');
+    const btnCopy = document.getElementById('btn-copy-token');
+    const title = document.getElementById('modal-token-title');
+    const subtitle = document.getElementById('modal-token-subtitle');
+    
+    // Change title for error
+    if (title) {
+        title.innerHTML = message;
+    }
+    
+    // Hide subtitle
+    if (subtitle) {
+        subtitle.classList.add('d-none');
+    }
+    
+    if (loading) loading.classList.add('d-none');
+    
+    // Hide the button completely
+    if (btnCopy) btnCopy.classList.add('d-none');
+    
+    // Clear the display area
+    if (display) {
+        display.innerHTML = '';
+    }
+}
 
-            const formData = new FormData();
-            formData.append('kandidat_id', kandidatId);
-            formData.append('token', tokenInput.value);
+    // Copy token ke clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Tampilkan feedback sukses
+            const btnCopy = document.getElementById('btn-copy-token');
+            const originalHTML = btnCopy.innerHTML;
+            
+            btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
+            btnCopy.classList.add('btn-success');
+            btnCopy.classList.remove('btn-dark');
+            
+            setTimeout(() => {
+                btnCopy.innerHTML = originalHTML;
+                btnCopy.classList.remove('btn-success');
+                btnCopy.classList.add('btn-dark');
+            }, 1500);
+        }).catch(function(err) {
+            // Fallback untuk browser lama
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
 
-            fetch('proses_pilih.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: data.message,
-                            confirmButtonText: 'OK'
-                        }).then(() => {
-                            location.reload();
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: data.message
-                        });
+            const btnCopy = document.getElementById('btn-copy-token');
+            const originalHTML = btnCopy.innerHTML;
+            
+            btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
+            btnCopy.classList.add('btn-success');
+            btnCopy.classList.remove('btn-dark');
+            
+            setTimeout(() => {
+                btnCopy.innerHTML = originalHTML;
+                btnCopy.classList.remove('btn-success');
+                btnCopy.classList.add('btn-dark');
+            }, 1500);
+        });
+    }
 
-                        // Reset button
-                        submitBtn.disabled = false;
-                        btnText.classList.remove('d-none');
-                        spinner.classList.add('d-none');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
+    // Submit voting
+    function submitVote(event, kandidatId) {
+        event.preventDefault();
+
+        const form = event.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const spinner = submitBtn.querySelector('.spinner-border');
+        const tokenInput = form.querySelector('input[name="token"]');
+
+        // Disable button dan tampilkan loading
+        submitBtn.disabled = true;
+        btnText.classList.add('d-none');
+        spinner.classList.remove('d-none');
+
+        const formData = new FormData();
+        formData.append('kandidat_id', kandidatId);
+        formData.append('token', tokenInput.value);
+
+        fetch('proses_pilih.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: data.message,
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
                     Swal.fire({
                         icon: 'error',
-                        title: 'Error',
-                        text: 'Terjadi kesalahan saat memproses voting'
+                        title: 'Gagal',
+                        text: data.message
                     });
 
                     // Reset button
                     submitBtn.disabled = false;
                     btnText.classList.remove('d-none');
                     spinner.classList.add('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Terjadi kesalahan saat memproses voting'
                 });
 
-            return false;
-        }
-    </script>
-    <script src="../bootstrap/js/bootstrap.bundle.js"></script>
-    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-    <script>
-        AOS.init();
-    </script>
+                // Reset button
+                submitBtn.disabled = false;
+                btnText.classList.remove('d-none');
+                spinner.classList.add('d-none');
+            });
+
+        return false;
+    }
+</script>
+<script src="../script.js"></script>
     <script src="../script.js"></script>
 
 </body>
