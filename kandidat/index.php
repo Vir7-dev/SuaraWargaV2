@@ -16,6 +16,7 @@ try {
         k.misi,
         k.foto_profil,
         k.id_kandidat,
+        k.no_kandidat,
         p.nama,
         p.pendidikan,
         p.pekerjaan,
@@ -24,7 +25,7 @@ try {
     FROM kandidat k
     JOIN pengguna p ON k.pengguna_id = p.id
     JOIN periode pr ON k.id_periode = pr.id_periode
-    WHERE pr.status_periode = 'aktif';");
+    WHERE pr.status_periode = 'aktif' order by k.no_kandidat asc;");
 
     $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -142,14 +143,14 @@ try {
                         <div class="card rounded-4 card-bg mb-5">
 
                             <!-- Foto Kandidat -->
-                            <img src="../assets/img/photo.png"
+                            <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                 class="card-img-top p-3 img-fit"
                                 style="border-radius: 26px;"
                                 alt="Foto Kandidat">
 
                             <div class="card-body">
                                 <h1 class="card-title poppins-semibold">
-                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                 </h1>
 
                                 <hr>
@@ -199,11 +200,11 @@ try {
 
                                             <!-- Kiri -->
                                             <div class="col-lg-3 col-12">
-                                                <img src="../assets/img/photo.png"
+                                                <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                                     class="rounded-4 d-block mx-auto mb-3 img-fit">
 
                                                 <h1 class="card-title poppins-semibold">
-                                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                                 </h1>
 
                                                 <hr>
@@ -287,7 +288,7 @@ try {
     <!-- Diagram -->
     <div class="container col-lg-12 col-10 mb-5">
         <?php if (!empty($pengguna_list)): ?>
-            <h2 class="text-center poppins-bold mb-5">Hasil Sementara<?= ($pengguna_list[0]['nama_periode']) ?></h2>
+            <h2 class="text-center poppins-bold mb-5">Hasil <?= ($pengguna_list[0]['nama_periode']) ?></h2>
         <?php else: ?>
             <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dihitung</h2>
         <?php endif; ?>

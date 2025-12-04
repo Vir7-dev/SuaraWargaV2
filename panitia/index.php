@@ -15,6 +15,7 @@ try {
         k.misi,
         k.foto_profil,
         k.id_kandidat,
+        k.no_kandidat,
         p.nama,
         p.pendidikan,
         p.pekerjaan,
@@ -23,7 +24,7 @@ try {
     FROM kandidat k
     JOIN pengguna p ON k.pengguna_id = p.id
     JOIN periode pr ON k.id_periode = pr.id_periode
-    WHERE pr.status_periode = 'aktif';");
+    WHERE pr.status_periode = 'aktif' order by k.no_kandidat asc;");
 
     $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -147,7 +148,7 @@ try {
 
                             <div class="card-body">
                                 <h1 class="card-title poppins-semibold">
-                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                 </h1>
 
                                 <hr>
@@ -197,11 +198,11 @@ try {
 
                                             <!-- Kiri -->
                                             <div class="col-lg-3 col-12">
-                                                <img src="../assets/img/photo.png"
+                                                <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                                     class="rounded-4 d-block mx-auto mb-3 img-fit">
 
                                                 <h1 class="card-title poppins-semibold">
-                                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                                 </h1>
 
                                                 <hr>
@@ -436,7 +437,7 @@ try {
         </div>
 
         <div class="modal fade" id="modal-keluar" tabindex="-1" aria-labelledby="keluar" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content bg-putih">
                     <div class="modal-body">
                         <div class="text-end">
