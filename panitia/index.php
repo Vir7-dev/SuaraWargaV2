@@ -89,7 +89,7 @@ try {
                             <a href="periode.php" class="btn btn-dark"><i class="fa-solid fa-calendar-day me-2"></i>PERIODE</a>
                         </li>
                         <li class="nav-item">
-                            <a class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-reset-password" href="#"><i class="fa-solid fa-key me-2"></i>RESET PASSWORD</a>
+                            <a class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-reset-password" href="#"><i class="fa-solid fa-key me-2"></i>UBAH SANDI</a>
                         </li>
                         <li class="nav-item">
                             <a class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-keluar" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>KELUAR</a>

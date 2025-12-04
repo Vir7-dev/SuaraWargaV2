@@ -14,26 +14,35 @@ if (!empty($_SESSION['reset_error'])) {
 }
 
 require_once '../koneksi.php';
+
+// Inisialisasi variabel default
+$periode_list = [];
+$suara = [];
+$kandidat_ids = [];
+$pengguna_id = [];
+$total_suara = [];
+$error_fetch = '';
+
 try {
-    // Gunakan $pdo->query() jika tidak ada input user (SELECT murni)
+    // Query kandidat - HAPUS TITIK KOMA DI AKHIR
     $stmt = $pdo->query("SELECT
-	k.visi,
-	k.misi,
-	k.foto_profil,
-	k.id_kandidat,
-	p.nama,
-	p.pendidikan,
-	p.pekerjaan,
-	p.alamat,
-	pr.nama_periode
-FROM kandidat k
-JOIN pengguna p ON k.pengguna_id = p.id
-JOIN periode pr ON k.id_periode = pr.id_periode;");
-    // Ambil semua hasil dalam bentuk array asosiatif
+        k.visi,
+        k.misi,
+        k.foto_profil,
+        k.id_kandidat,
+        p.nama,
+        p.pendidikan,
+        p.pekerjaan,
+        p.alamat,
+        pr.nama_periode
+    FROM kandidat k
+    JOIN pengguna p ON k.pengguna_id = p.id
+    JOIN periode pr ON k.id_periode = pr.id_periode");
+    
     $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // JUMLAH SUARA
-    $stmt1 = $stmt2 = $pdo->query("SELECT 
+    $stmt_suara = $pdo->query("SELECT 
         k.id_kandidat,
         k.pengguna_id,
         p.nama,
@@ -43,15 +52,19 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
     LEFT JOIN pengguna p ON p.id = k.pengguna_id
     GROUP BY k.id_kandidat, k.pengguna_id, p.nama");
 
-    $suara = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+    $suara = $stmt_suara->fetchAll(PDO::FETCH_ASSOC);
 
-    $kandidat_ids = array_column($suara, 'id_kandidat');
-    $pengguna_id  = array_column($suara, 'nama');
-    $total_suara  = array_column($suara, 'total_suara');
+    // Pastikan $suara adalah array sebelum menggunakan array_column
+    if (is_array($suara) && !empty($suara)) {
+        $kandidat_ids = array_column($suara, 'id_kandidat');
+        $pengguna_id  = array_column($suara, 'nama');
+        $total_suara  = array_column($suara, 'total_suara');
+    }
+    
 } catch (PDOException $e) {
     // Tangani error pengambilan data
-    $error_fetch = "Gagal mengambil data periode.";
-    $periode_list = [];
+    $error_fetch = "Gagal mengambil data: " . $e->getMessage();
+    echo "<pre>Error Detail: " . $e->getMessage() . "</pre>"; // Untuk debugging
 }
 ?>
 
