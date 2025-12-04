@@ -56,11 +56,42 @@ if (isset($_POST['tambah'])) {
     }
 }
 
+if (isset($_POST['kandidat'])) {
+    $pengguna_id            = $_POST['pengguna_id'];
+    $id_periode           = $_POST['id_periode'];
+    $no_kandidat   = $_POST['no_kandidat'];
+    $jabatan  = $_POST['jabatan'];
+    $created_at = date('Y-m-d H:i:s');
+
+    try {
+        $query = "INSERT INTO kandidat 
+            (pengguna_id, no_kandidat, id_periode, jabatan, created_at)
+            VALUES (?, ?, ?, ?, ?)";
+        $stmt = $pdo->prepare($query);
+        $stmt->execute([
+            $pengguna_id,
+            $no_kandidat,
+            $id_periode,
+            $jabatan,
+            $created_at
+        ]);
+
+        $query2 = "UPDATE pengguna SET role = 'kandidat' WHERE id = ?";
+        $stmt2 = $pdo->prepare($query2);
+        $stmt2->execute([$pengguna_id]);
+
+        header("Location: pengguna.php?msg=added");
+        exit;
+    } catch (PDOException $e) {
+        header("Location: pengguna.php?err=" . urlencode("Gagal menambah pengguna: " . $e->getMessage()));
+        exit;
+    }
+}
+
 // ===========================
 // UPDATE (EDIT) - POST
 // ===========================
 if (isset($_POST['edit'])) {
-
     $id             = $_POST['id'] ?? null;
     $nik            = trim($_POST['nik'] ?? '');
     $nama           = trim($_POST['nama'] ?? '');
@@ -72,11 +103,8 @@ if (isset($_POST['edit'])) {
     $alamat         = trim($_POST['alamat'] ?? '');
     $agama          = trim($_POST['agama'] ?? '');
     $status_pilih   = trim($_POST['status_pilih'] ?? 'belum');
-    $updated_at     = date('Y-m-d H:i:s');
+    $updated_at = date('Y-m-d H:i:s');
     $role           = trim($_POST['role'] ?? 'warga');
-    $id_p           = trim($_POST['id_periode'] ?? '');
-    $jabatan           = trim($_POST['jabatan'] ?? '');
-    $no           = trim($_POST['no_kandidat'] ?? '');
 
     if (!$id || $nik === '' || $nama === '') {
         header("Location: pengguna.php?err=" . urlencode("ID, NIK, dan Nama wajib diisi."));
@@ -84,42 +112,13 @@ if (isset($_POST['edit'])) {
     }
 
     try {
-
-        // ================================================================
-        // VALIDASI ROLE KANDIDAT HARUS PUNYA ID_PERIODE
-        // ================================================================
-        if ($role === 'kandidat' && (empty($id_p) || empty($no) || empty($jabatan))) {
-
-            // Ambil role lama dari DB
-            $getRole = $pdo->prepare("SELECT role FROM pengguna WHERE id = ? LIMIT 1");
-            $getRole->execute([$id]);
-            $oldRole = $getRole->fetch(PDO::FETCH_ASSOC);
-
-            if ($oldRole && isset($oldRole['role'])) {
-                // Kembalikan role supaya tidak berubah
-                $role = $oldRole['role'];
-            }
-
-            header("Location: pengguna.php?err=" . urlencode(
-                "Data kandidat tidak lengkap. Role tidak diubah."
-            ));
-            exit;
-        }
-
-
-        // ================================================================
-        // UPDATE PENGGUNA (role sudah aman sesuai validasi di atas)
-        // ================================================================
+        // Update tanpa password jika tidak diisi
         if (!empty($_POST['password'])) {
-
             $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-
             $query = "UPDATE pengguna SET
                         nik = ?, nama = ?, tempat_lahir = ?, tanggal_lahir = ?, jenis_kelamin = ?,
-                        pendidikan = ?, pekerjaan = ?, alamat = ?, agama = ?, status_pilih = ?, 
-                        role = ?, password = ?, updated_at = ?
+                        pendidikan = ?, pekerjaan = ?, alamat = ?, agama = ?, status_pilih = ?, role = ?, password = ?, updated_at = ?
                       WHERE id = ?";
-
             $stmt = $pdo->prepare($query);
             $stmt->execute([
                 $nik,
@@ -138,13 +137,10 @@ if (isset($_POST['edit'])) {
                 $id
             ]);
         } else {
-
             $query = "UPDATE pengguna SET
                         nik = ?, nama = ?, tempat_lahir = ?, tanggal_lahir = ?, jenis_kelamin = ?,
-                        pendidikan = ?, pekerjaan = ?, alamat = ?, agama = ?, status_pilih = ?, 
-                        role = ?, updated_at = ?
+                        pendidikan = ?, pekerjaan = ?, alamat = ?, agama = ?, status_pilih = ?, role = ?, updated_at = ?
                       WHERE id = ?";
-
             $stmt = $pdo->prepare($query);
             $stmt->execute([
                 $nik,
@@ -163,25 +159,6 @@ if (isset($_POST['edit'])) {
             ]);
         }
 
-        // ================================================================
-        // INSERT KE KANDIDAT HANYA JIKA role = kandidat DAN id_periode ADA
-        // ================================================================
-        if ($role === 'kandidat' && !empty($id_p)) {
-
-            $cek = $pdo->prepare("SELECT id_kandidat FROM kandidat 
-                                  WHERE pengguna_id = ? AND id_periode = ?");
-            $cek->execute([$id, $id_p]);
-
-            if ($cek->rowCount() === 0) {
-
-                $ins = $pdo->prepare("
-                    INSERT INTO kandidat (id_periode, jabatan, no_kandidat, pengguna_id, visi, misi, created_at)
-                    VALUES (?, ?, ?, ?, '', '', NOW())
-                ");
-                $ins->execute([$id_p, $jabatan, $no, $id]);
-            }
-        }
-
         header("Location: pengguna.php?msg=updated");
         exit;
     } catch (PDOException $e) {
@@ -189,7 +166,6 @@ if (isset($_POST['edit'])) {
         exit;
     }
 }
-
 
 // ===========================
 // DELETE (HAPUS) - GET
@@ -221,12 +197,12 @@ try {
         $stmt = $pdo->prepare("SELECT id, nik, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, alamat, agama, status_pilih, role 
                                FROM pengguna 
                                WHERE nik LIKE ? OR nama LIKE ?
-                               ORDER BY role ASC");
+                               ORDER BY id DESC");
         $stmt->execute([$search_param, $search_param]);
     } else {
         $stmt = $pdo->query("SELECT id, nik, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, alamat, agama, status_pilih, role 
                             FROM pengguna 
-                            ORDER BY role ASC");
+                            ORDER BY id DESC");
     }
     $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -239,7 +215,7 @@ try {
         WHERE status_periode = :status
         ORDER BY id_periode DESC
     ");
-    $stmt->execute(['status' => 'tidak_aktif']);
+    $stmt->execute(['status' => 'aktif']);
 
     $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -369,7 +345,7 @@ try {
                                         <td><?= htmlspecialchars($data['role']) ?></td>
 
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-warning me-2"
+                                            <button type="button" class="btn btn-sm btn-warning me-2 mb-2"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modal-ubah"
                                                 data-id="<?= htmlspecialchars($data['id']) ?>"
@@ -386,11 +362,23 @@ try {
                                                 data-role="<?= htmlspecialchars($data['role']) ?>">
                                                 <i class="fa-solid fa-edit"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger"
+                                            <button type="button" class="btn btn-sm btn-danger mb-2"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modal-hapus"
                                                 data-id-hapus="<?= htmlspecialchars($data['id']) ?>">
                                                 <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger me-2"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modal-kandidat"
+                                                data-id-edit="<?= htmlspecialchars($data['id']) ?>">
+                                                <i class="fa-solid fa-user-tie"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#   "
+                                                data-id-edit="<?= htmlspecialchars($data['id']) ?>">
+                                                <i class="fa-solid fa-user-xmark"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -487,7 +475,14 @@ try {
                                     <textarea name="alamat" class="form-control" rows="3" required></textarea>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Role <span class="text-danger">*</span></label>
+                                    <label class="col-form-label">Status Pemilihan <span class="text-danger">*</span></label>
+                                    <select name="status_pilih" class="form-control" required>
+                                        <option value="belum">Belum Memilih</option>
+                                        <option value="sudah">Sudah Memilih</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="col-form-label">Role</label>
                                     <select name="role" class="form-control">
                                         <option value="warga">Warga</option>
                                         <option value="panitia">Panitia</option>
@@ -521,13 +516,6 @@ try {
                         <form method="POST" action="pengguna.php">
                             <input type="hidden" name="id" id="ubah-id">
                             <div class="row">
-                                <?php if (!empty($periode_list)): ?>
-                                    <?php foreach ($periode_list as $p): ?>
-                                        <input type="hidden" name="id_periode" value="<?= htmlspecialchars($p['id_periode']) ?>">
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <p>Tidak ada periode aktif.</p>
-                                <?php endif; ?>
                                 <div class="col-md-6 mb-3">
                                     <label class="col-form-label">NIK <span class="text-danger">*</span></label>
                                     <input type="text" name="nik" id="ubah-nik" class="form-control" required>
@@ -537,15 +525,15 @@ try {
                                     <input type="text" name="nama" id="ubah-nama" class="form-control" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Tempat Lahir <span class="text-danger">*</span></label>
-                                    <input type="text" name="tempat_lahir" id="ubah-tempat_lahir" class="form-control" required>
+                                    <label class="col-form-label">Tempat Lahir</label>
+                                    <input type="text" name="tempat_lahir" id="ubah-tempat_lahir" class="form-control">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Tanggal Lahir <span class="text-danger">*</span></label>
-                                    <input type="date" name="tanggal_lahir" id="ubah-tanggal_lahir" class="form-control" required>
+                                    <label class="col-form-label">Tanggal Lahir</label>
+                                    <input type="date" name="tanggal_lahir" id="ubah-tanggal_lahir" class="form-control">
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Jenis Kelamin <span class="text-danger">*</span></label>
+                                    <label class="col-form-label">Jenis Kelamin</label>
                                     <div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="jenis_kelamin" id="ubah_jk_l" value="L">
@@ -558,8 +546,8 @@ try {
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Agama <span class="text-danger">*</span></label>
-                                    <select name="agama" id="ubah-agama" class="form-control" required>
+                                    <label class="col-form-label">Agama</label>
+                                    <select name="agama" id="ubah-agama" class="form-control">
                                         <option value="">-- Pilih Agama --</option>
                                         <option value="Islam">Islam</option>
                                         <option value="Kristen">Kristen</option>
@@ -570,8 +558,8 @@ try {
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Pendidikan Terakhir <span class="text-danger">*</span></label>
-                                    <select name="pendidikan" id="ubah-pendidikan" class="form-control" required>
+                                    <label class="col-form-label">Pendidikan Terakhir</label>
+                                    <select name="pendidikan" id="ubah-pendidikan" class="form-control">
                                         <option value="">-- Pilih Pendidikan --</option>
                                         <option value="SD">SD</option>
                                         <option value="SMP">SMP</option>
@@ -583,38 +571,89 @@ try {
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Pekerjaan <span class="text-danger">*</span></label>
-                                    <input type="text" name="pekerjaan" id="ubah-pekerjaan" class="form-control" required>
+                                    <label class="col-form-label">Pekerjaan</label>
+                                    <input type="text" name="pekerjaan" id="ubah-pekerjaan" class="form-control">
                                 </div>
                                 <div class="col-12 mb-3">
-                                    <label class="col-form-label">Alamat <span class="text-danger">*</span></label>
-                                    <textarea name="alamat" id="ubah-alamat" class="form-control" rows="3" required></textarea>
+                                    <label class="col-form-label">Alamat</label>
+                                    <textarea name="alamat" id="ubah-alamat" class="form-control" rows="3"></textarea>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Role <span class="text-danger">*</span></label>
-                                    <select name="role" id="ubah-role" class="form-control" required>
-                                        <option value="warga">Warga</option>
+                                    <label class="col-form-label">Status Pemilihan</label>
+                                    <select name="status_pilih" id="ubah-status_pilih" class="form-control">
+                                        <option value="belum">Belum Memilih</option>
+                                        <option value="sudah">Sudah Memilih</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="col-form-label">Role</label>
+                                    <select name="role" id="ubah-role" class="form-control">
+                                        <option value="warga">User</option>
                                         <option value="panitia">Panitia</option>
                                         <option value="kandidat">Kandidat</option>
                                     </select>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Password <span class="text-danger">*</span> <small class="text-muted">(Kosongkan jika tidak ingin mengubah)</small></label>
+                                    <label class="col-form-label">Password <small class="text-muted">(Kosongkan jika tidak ingin mengubah)</small></label>
                                     <input type="password" name="password" class="form-control">
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">No Urut <span class="text-danger">*</span> <small class="text-muted">(Isi jika role kandidat)</small></label>
-                                    <input type="number" name="no_kandidat" class="form-control">
-                                </div>
-                                <div class="col-md-6 offset-6 mb-3">
-                                    <label class="col-form-label">Jabatan <span class="text-danger">*</span> <small class="text-muted">(Isi jika role kandidat)</small></label>
-                                    <input type="text" name="jabatan" class="form-control">
                                 </div>
                             </div>
 
                             <div class="text-end">
                                 <button type="submit" name="edit" class="btn btn-success">Ubah Data</button>
                             </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="modal fade" id="modal-kandidat" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content rounded-4 bg-putih">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5">Formulir Kandiat - Tambah</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="POST" action="pengguna.php">
+                            <div class="row">
+                                <input type="hidden" name="pengguna_id" value="<?= htmlspecialchars($data['id']) ?>">
+                                <div class="col-md-6 mb-3">
+                                    <label class="col-form-label">NIK <span class="text-danger">*</span></label>
+                                    <input type="text" name="nik" class="form-control" value="<?= htmlspecialchars($data['nik']) ?>" disabled>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="col-form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                                    <input type="text" name="nama" class="form-control" value="<?= htmlspecialchars($data['nama']) ?>" disabled>
+                                </div>
+                                <?php if (!empty($periode_list)): ?>
+                                    <?php foreach ($periode_list as $p): ?>
+                                        <input type="hidden" name="id_periode" value="<?= htmlspecialchars($p['id_periode']) ?>">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="col-form-label">Nama Periode</label>
+                                            <input type="text" class="form-control" value="<?= htmlspecialchars($p['nama_periode']) ?>" disabled>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <p>Tidak ada periode aktif.</p>
+                                <?php endif; ?>
+                                <div class="col-md-3 mb-3">
+                                    <label class="col-form-label">No Kandidat <span class="text-danger">*</span></label>
+                                    <input type="number" name="no_kandidat" class="form-control" required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label class="col-form-label">Jabatan <span class="text-danger">*</span></label>
+                                    <select class="form-control" name="jabatan" id="jabatan">
+                                        <option value="RT">RT</option>
+                                        <option value="RW">RW</option>
+                                    </select>
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="submit" name="kandidat" class="btn btn-success">Simpan</button>
+                                </div>
                         </form>
                     </div>
                 </div>
@@ -663,27 +702,60 @@ try {
                 </div>
             </div>
         </div>
-        <div class="modal fade" id="modal-import" tabindex="-1">
-            <div class="modal-dialog">
-                <form action="import.php" method="POST" enctype="multipart/form-data">
-                    <div class="modal-content">
-                        <div class="modal-header bg-success text-white">
-                            <h5 class="modal-title">Import Data Excel</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <label>Upload File Excel (.xlsx / .xls)</label>
-                            <input type="file" name="file_excel" class="form-control" accept=".xlsx,.xls" required>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-upload me-1"></i> Import</button>
-                        </div>
+        <!-- modal import-->
+
+
+    </div>
+    <!-- Modal Import Excel -->
+
+
+    <!-- Modal Import -->
+    <div class="modal fade" id="modal-import" tabindex="-1">
+        <div class="modal-dialog">
+            <form action="import.php" method="POST" enctype="multipart/form-data">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Import Data Excel</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                </form>
-            </div>
+                    <div class="modal-body">
+                        <label>Upload File Excel (.xlsx / .xls)</label>
+                        <input type="file" name="file_excel" class="form-control" accept=".xlsx,.xls" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-upload me-1"></i> Import</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
+    <?php if (isset($_GET['msg']) && $_GET['msg'] == "success") : ?>
+        <!-- Modal Success -->
+        <div class="modal fade" id="modalSuccess" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content text-center">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-success"><i class="fa-solid fa-circle-check me-2"></i>Berhasil</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">Berhasil menambahkan <b><?= $_GET['jumlah']; ?></b> pengguna dari file Excel.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            var modalSuccess = new bootstrap.Modal(document.getElementById('modalSuccess'), {});
+            modalSuccess.show();
+        </script>
+    <?php endif; ?>
+
+
 
     <script src="../bootstrap/js/bootstrap.bundle.js"></script>
     <script>
@@ -707,9 +779,6 @@ try {
             const agama = button.getAttribute('data-agama');
             const status_pilih = button.getAttribute('data-status_pilih');
             const role = button.getAttribute('data-role');
-            const jabatan = button.getAttribute('data-jabatan');
-            const no_kandidat = button.getAttribute('data-no_kandidat');
-
 
             // Isi form modal
             modalUbah.querySelector('#ubah-id').value = id || '';
@@ -731,9 +800,6 @@ try {
             modalUbah.querySelector('#ubah-agama').value = agama || '';
             modalUbah.querySelector('#ubah-status_pilih').value = status_pilih || 'belum';
             modalUbah.querySelector('#ubah-role').value = role || 'warga';
-            modalUbah.querySelector('input[name="jabatan"]').value = jabatan || '';
-            modalUbah.querySelector('input[name="no_kandidat"]').value = no_kandidat || '';
-
         });
 
         // ------------------------------------

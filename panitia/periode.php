@@ -221,8 +221,10 @@ try {
                                         <td>
                                             <?php if ($data['status_periode'] == 'aktif'): ?>
                                                 <h6><span class="badge bg-success">Aktif</span></h6>
+                                            <?php elseif ($data['status_periode'] == 'tidak_aktif'): ?>
+                                                <h6><span class="badge bg-danger">Tidak Aktif</span></h6>
                                             <?php else: ?>
-                                                <h6><span class="badge bg-secondary">Tidak Aktif</span></h6>
+                                                <h6><span class="badge bg-secondary">Berakhir</span></h6>
                                             <?php endif; ?>
                                         </td>
 
@@ -290,7 +292,6 @@ try {
                                 <div class="col-12 mb-3">
                                     <label class="col-form-label">Status</label>
                                     <select name="status_periode" class="form-control">
-                                        <option value="aktif">Aktif</option>
                                         <option value="tidak_aktif" selected>Tidak Aktif</option>
                                     </select>
                                 </div>
@@ -333,7 +334,8 @@ try {
                                     <label class="col-form-label">Status</label>
                                     <select name="status_periode" id="ubah-status" class="form-control">
                                         <option value="aktif">Aktif</option>
-                                        <option value="tidak_aktif">Tidak Aktif</option>
+                                        <option value="berakhir">Berakhir</option>
+                                        <option value="tidak_aktif">T</option>
                                     </select>
                                 </div>
                             </div>

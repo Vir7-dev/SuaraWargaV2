@@ -9,23 +9,26 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION[
 
 require_once '../koneksi.php';
 try {
-    // Gunakan $pdo->query() jika tidak ada input user (SELECT murni)
+    // LIST KANDIDAT
     $stmt = $pdo->query("SELECT
-	k.visi,
-	k.misi,
-	k.foto_profil,
-	k.id_kandidat,
-	p.nama,
-	p.pendidikan,
-	p.pekerjaan,
-	p.alamat,
-	pr.nama_periode
-FROM kandidat k
-JOIN pengguna p ON k.pengguna_id = p.id
-JOIN periode pr ON k.id_periode = pr.id_periode;");
-    // Ambil semua hasil dalam bentuk array asosiatif
-    $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        k.visi,
+        k.foto_profil,
+        k.misi,
+        k.foto_profil,
+        k.id_kandidat,
+        p.nama,
+        p.pendidikan,
+        p.pekerjaan,
+        p.alamat,
+        pr.nama_periode
+    FROM kandidat k
+    JOIN pengguna p ON k.pengguna_id = p.id
+    JOIN periode pr ON k.id_periode = pr.id_periode
+    WHERE pr.status_periode = 'aktif';");
 
+    $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // JUMLAH SUARA
     $stmt1 = $stmt2 = $pdo->query("SELECT 
         k.id_kandidat,
         k.pengguna_id,
@@ -42,9 +45,8 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
     $pengguna_id  = array_column($suara, 'nama');
     $total_suara  = array_column($suara, 'total_suara');
 } catch (PDOException $e) {
-    // Tangani error pengambilan data
     $error_fetch = "Gagal mengambil data periode.";
-    $periode_list = [];
+    $pengguna_list = [];
 }
 ?>
 
@@ -127,12 +129,15 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
     </div>
 
     <!-- Card Kandidat -->
-    <div class="container mb-5">
-        <h2 class="text-center poppins-bold mb-5">Pemilihan Ketua RT Periode 2025–2026</h2>
+    <div class="container mb-5"><?php if (!empty($pengguna_list)): ?>
+            <h2 class="text-center poppins-bold mb-5"><?= ($pengguna_list[0]['nama_periode']) ?></h2>
+        <?php else: ?>
+            <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dimulai</h2>
+        <?php endif; ?>
         <div class="row mb-5">
 
-            <?php if (!empty($periode_list)): ?>
-                <?php foreach ($periode_list as $data): ?>
+            <?php if (!empty($pengguna_list)): ?>
+                <?php foreach ($pengguna_list as $data): ?>
                     <div data-aos="flip-right" class="col-lg-3 col-md-5 col-11 mx-auto">
                         <div class="card rounded-4 card-bg mb-5">
 
@@ -281,9 +286,11 @@ JOIN periode pr ON k.id_periode = pr.id_periode;");
 
     <!-- Diagram -->
     <div class="container col-lg-12 col-10 mb-5">
-        <h2 class="text-center poppins-bold mb-5">
-            Hasil Sementara Pemilihan Ketua RT Periode 2025–2026s
-        </h2>
+        <?php if (!empty($pengguna_list)): ?>
+            <h2 class="text-center poppins-bold mb-5">Hasil Sementara<?= ($pengguna_list[0]['nama_periode']) ?></h2>
+        <?php else: ?>
+            <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dihitung</h2>
+        <?php endif; ?>
         <div class="row p-3 py-4 gap-4 gap-md-0 rounded-4 card-bg">
             <div class="col-12 flex-md-row flex-column d-flex justify-content-between align-items-center mb-3">
                 <h2 class="text-left poppins-bold text-putih">Hasil Pemilihan</h2>

@@ -11,6 +11,7 @@ try {
     // LIST KANDIDAT
     $stmt = $pdo->query("SELECT
         k.visi,
+        k.foto_profil,
         k.misi,
         k.foto_profil,
         k.id_kandidat,
@@ -21,9 +22,10 @@ try {
         pr.nama_periode
     FROM kandidat k
     JOIN pengguna p ON k.pengguna_id = p.id
-    JOIN periode pr ON k.id_periode = pr.id_periode;");
+    JOIN periode pr ON k.id_periode = pr.id_periode
+    WHERE pr.status_periode = 'aktif';");
 
-    $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // JUMLAH SUARA
     $stmt1 = $stmt2 = $pdo->query("SELECT 
@@ -43,7 +45,7 @@ try {
     $total_suara  = array_column($suara, 'total_suara');
 } catch (PDOException $e) {
     $error_fetch = "Gagal mengambil data periode.";
-    $periode_list = [];
+    $pengguna_list = [];
 }
 ?>
 
@@ -125,16 +127,20 @@ try {
 
     <!-- Card Kandidat -->
     <div class="container mb-5">
-        <h2 class="text-center poppins-bold mb-5">Pemilihan Ketua RT Periode 2025–2026</h2>
+        <?php if (!empty($pengguna_list)): ?>
+            <h2 class="text-center poppins-bold mb-5"><?= ($pengguna_list[0]['nama_periode']) ?></h2>
+        <?php else: ?>
+            <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dimulai</h2>
+        <?php endif; ?>
         <div class="row mb-5">
 
-            <?php if (!empty($periode_list)): ?>
-                <?php foreach ($periode_list as $data): ?>
+            <?php if (!empty($pengguna_list)): ?>
+                <?php foreach ($pengguna_list as $data): ?>
                     <div data-aos="flip-right" class="col-lg-3 col-md-5 col-11 mx-auto">
                         <div class="card rounded-4 card-bg mb-5">
 
                             <!-- Foto Kandidat -->
-                            <img src="../assets/img/photo.png"
+                            <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                 class="card-img-top p-3 img-fit"
                                 style="border-radius: 26px;"
                                 alt="Foto Kandidat">
