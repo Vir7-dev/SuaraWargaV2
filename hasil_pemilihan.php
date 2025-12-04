@@ -2,19 +2,22 @@
 include "koneksi.php";
 
 // ------------------
-// Query kandidat (ambil nama pengguna + nomor kandidat dari tabel kandidat)
+// QUERY KANDIDAT
 // ------------------
 $kandidatQuery = $pdo->query("
-    SELECT p.id, p.nama, k.no_kandidat
-    FROM pengguna p
-    JOIN kandidat k ON p.id = k.pengguna_id
+    SELECT 
+        k.id_kandidat, 
+        p.nama, 
+        k.no_kandidat
+    FROM kandidat k
+    JOIN pengguna p ON p.id = k.pengguna_id
     WHERE p.role = 'kandidat'
     ORDER BY k.no_kandidat ASC
 ");
 $kandidatList = $kandidatQuery->fetchAll(PDO::FETCH_ASSOC);
 
 // ------------------
-// Query suara per kandidat
+// QUERY SUARA PER KANDIDAT
 // ------------------
 $suaraQuery = $pdo->query("
     SELECT 
@@ -25,33 +28,30 @@ $suaraQuery = $pdo->query("
 ");
 $suaraData = $suaraQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// Hitung total keseluruhan suara
+// Total semua suara
 $totalSuara = $pdo->query("SELECT COUNT(*) FROM suara")->fetchColumn();
 
 // ------------------
-// Gabungkan suara ke kandidat
+// GABUNGKAN SUARA KE KANDIDAT
 // ------------------
 foreach ($kandidatList as $key => $k) {
     $total = 0;
 
     foreach ($suaraData as $s) {
-        if ($s['kandidat_id'] == $k['id']) {
+        if ($s['kandidat_id'] == $k['id_kandidat']) {
             $total = $s['total_suara'];
         }
     }
 
+    // Total suara
     $kandidatList[$key]['total_suara'] = $total;
+
+    // Persentase
     $kandidatList[$key]['persentase'] = ($totalSuara > 0)
         ? number_format(($total / $totalSuara) * 100, 2)
         : 0;
 }
 
-// Grafik
-$labels = array_column($kandidatList, 'nama');
-$data = array_column($kandidatList, 'total_suara');
-
-// Tabel suara
-$dataTable = $pdo->query("SELECT * FROM suara ORDER BY waktu DESC")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -68,8 +68,7 @@ $dataTable = $pdo->query("SELECT * FROM suara ORDER BY waktu DESC")->fetchAll(PD
             background: #f5f5f5;
         }
 
-        h1,
-        h2 {
+        h1 {
             text-align: center;
             margin-bottom: 20px;
         }
@@ -110,30 +109,6 @@ $dataTable = $pdo->query("SELECT * FROM suara ORDER BY waktu DESC")->fetchAll(PD
             font-size: 12px;
             line-height: 18px;
         }
-
-        canvas {
-            display: block;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 40px;
-        }
-
-        th,
-        td {
-            border: 1px solid #333;
-            padding: 8px;
-            text-align: center;
-        }
-
-        th {
-            background: #009879;
-            color: white;
-        }
     </style>
 </head>
 
@@ -158,26 +133,5 @@ $dataTable = $pdo->query("SELECT * FROM suara ORDER BY waktu DESC")->fetchAll(PD
         <?php endforeach; ?>
     </div>
 
-    <!-- GRAFIK -->
-    <h2>Grafik Perolehan Suara</h2>
-    <canvas id="suaraChart"></canvas>
-
-    <script>
-        const labels = <?= json_encode($labels); ?>;
-        const data = <?= json_encode($data); ?>;
-
-        new Chart(document.getElementById('suaraChart'), {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Jumlah Suara',
-                    data: data
-                }]
-            }
-        });
-    </script>
-
 </body>
-
 </html>
