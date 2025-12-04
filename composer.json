@@ -1,0 +1,17 @@
+{
+    "name": "rajiv/suara-warga-v2",
+    "autoload": {
+        "psr-4": {
+            "Rajiv\\SuaraWargaV2\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Rajiv2809",
+            "email": "121161360+Rajiv2809@users.noreply.github.com"
+        }
+    ],
+    "require": {
+        "dompdf/dompdf": "^3.1"
+    }
+}
