@@ -24,7 +24,7 @@ if (isset($_POST['tambah'])) {
             $checkQuery = "SELECT COUNT(*) FROM periode WHERE status_periode = 'aktif'";
             $checkStmt = $pdo->query($checkQuery);
             $activeCount = $checkStmt->fetchColumn();
-            
+
             if ($activeCount > 0) {
                 header("Location: periode.php?err=" . urlencode("Tidak dapat menambah periode aktif, Sudah ada periode yang aktif saat ini."));
                 exit;
@@ -66,7 +66,7 @@ if (isset($_POST['edit'])) {
             $checkStmt = $pdo->prepare($checkQuery);
             $checkStmt->execute([$id_periode]);
             $activeCount = $checkStmt->fetchColumn();
-            
+
             if ($activeCount > 0) {
                 header("Location: periode.php?err=" . urlencode("Tidak dapat mengaktifkan periode, Sudah ada periode yang aktif saat ini."));
                 exit;
@@ -131,6 +131,7 @@ try {
 </head>
 
 <body class="bg">
+    <!-- NAVBAR -->
     <div class="container mb-5">
         <nav class="navbar navbar-expand-lg mt-2 mb-5">
             <div class="container d-flex align-items-center">
@@ -151,10 +152,13 @@ try {
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">
                         <li class="nav-item">
-                            <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house-user me-2"></i>BERANDA</a>
+                            <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house me-2"></i>BERANDA</a>
                         </li>
                         <li class="nav-item">
                             <a href="pengguna.php" class="btn btn-dark"><i class="fa-solid fa-users me-2"></i>PENGGUNA</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="periode.php" class="btn btn-dark"><i class="fa-solid fa-calendar-day me-2"></i>PERIODE</a>
                         </li>
                         <li class="nav-item">
                             <a class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-keluar" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>KELUAR</a>
@@ -164,17 +168,15 @@ try {
 
             </div>
         </nav>
-
     </div>
-
     <div class="container mb-3">
         <!-- Alert Messages -->
         <?php if (isset($_GET['msg'])): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <?php 
-                    if ($_GET['msg'] == 'added') echo 'Data periode berhasil ditambahkan!';
-                    if ($_GET['msg'] == 'updated') echo 'Data periode berhasil diubah!';
-                    if ($_GET['msg'] == 'deleted') echo 'Data periode berhasil dihapus!';
+                <?php
+                if ($_GET['msg'] == 'added') echo 'Data periode berhasil ditambahkan!';
+                if ($_GET['msg'] == 'updated') echo 'Data periode berhasil diubah!';
+                if ($_GET['msg'] == 'deleted') echo 'Data periode berhasil dihapus!';
                 ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -265,8 +267,8 @@ try {
         </div>
     </div>
 
-    <!-- Modal TAMBAH -->
     <div class="container">
+        <!-- Modal TAMBAH -->
         <div class="modal fade" id="modal-periode" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content rounded-4 bg-putih">

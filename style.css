@@ -58,6 +58,13 @@
     text-align: center;
 }
 
+.btn-secondary {
+    text-decoration: none;
+    color: #FFFEEC;
+    font-weight: 700;
+    text-align: center;
+}
+
 .btn-danger {
     background-color: #FF0000;
     text-decoration: none;

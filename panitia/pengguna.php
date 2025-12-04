@@ -235,10 +235,30 @@ $search_param = '%' . $search . '%';
 
 try {
     if (!empty($search)) {
-        $stmt = $pdo->prepare("SELECT id, nik, nama, tempat_lahir, tanggal_lahir, jenis_kelamin, pendidikan, pekerjaan, alamat, agama, status_pilih, role 
-                               FROM pengguna 
-                               WHERE nik LIKE ? OR nama LIKE ?
-                               ORDER BY role ASC");
+        $stmt = $pdo->prepare("SELECT 
+            p.id,
+            p.nik,
+            p.nama,
+            p.tempat_lahir,
+            p.tanggal_lahir,
+            p.jenis_kelamin,
+            p.pendidikan,
+            p.pekerjaan,
+            p.alamat,
+            p.agama,
+            p.status_pilih,
+            p.role,
+            k.id_kandidat,
+            k.id_periode,
+            k.no_kandidat,
+            k.foto_profil,
+            k.jabatan,
+            k.visi,
+            k.misi
+        FROM pengguna p
+        LEFT JOIN kandidat k ON k.pengguna_id = p.id
+        WHERE nik LIKE ? OR nama LIKE ?
+        ORDER BY p.role ASC");
         $stmt->execute([$search_param, $search_param]);
     } else {
         $stmt = $pdo->query("SELECT 
@@ -298,6 +318,7 @@ try {
 </head>
 
 <body class="bg">
+    <!-- NAVBAR -->
     <div class="container mb-5">
         <nav class="navbar navbar-expand-lg mt-2 mb-5">
             <div class="container d-flex align-items-center">
@@ -318,7 +339,10 @@ try {
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">
                         <li class="nav-item">
-                            <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house-user me-2"></i>BERANDA</a>
+                            <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house me-2"></i>BERANDA</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="pengguna.php" class="btn btn-dark"><i class="fa-solid fa-users me-2"></i>PENGGUNA</a>
                         </li>
                         <li class="nav-item">
                             <a href="periode.php" class="btn btn-dark"><i class="fa-solid fa-calendar-day me-2"></i>PERIODE</a>
@@ -331,7 +355,6 @@ try {
 
             </div>
         </nav>
-
     </div>
 
     <div class="container mb-3">
@@ -682,7 +705,6 @@ try {
                 </div>
             </div>
         </div>
-
         <!-- Modal KELUAR -->
         <div class="modal fade" id="modal-keluar" tabindex="-1" aria-labelledby="keluar" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">

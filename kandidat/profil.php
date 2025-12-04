@@ -74,7 +74,10 @@ try {
                 <div class="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">
                         <li class="nav-item">
-                            <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house-user me-2"></i>BERANDA</a>
+                            <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house me-2"></i>BERANDA</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="profil.php" class="btn btn-dark"><i class="fa-solid fa-address-card me-2"></i>PROFIL</a>
                         </li>
                         <li class="nav-item">
                             <a class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modal-keluar" href="#"><i class="fa-solid fa-right-from-bracket me-2"></i>KELUAR</a>
