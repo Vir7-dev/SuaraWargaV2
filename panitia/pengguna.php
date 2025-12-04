@@ -33,8 +33,19 @@ if (isset($_POST['tambah'])) {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($query);
         $stmt->execute([
-            $nik, $nama, $tempat_lahir, $tanggal_lahir, $jenis_kelamin,
-            $pendidikan, $pekerjaan, $alamat, $agama, $status_pilih, $role, $password, $created_at
+            $nik,
+            $nama,
+            $tempat_lahir,
+            $tanggal_lahir,
+            $jenis_kelamin,
+            $pendidikan,
+            $pekerjaan,
+            $alamat,
+            $agama,
+            $status_pilih,
+            $role,
+            $password,
+            $created_at
         ]);
 
         header("Location: pengguna.php?msg=added");
@@ -58,7 +69,11 @@ if (isset($_POST['kandidat'])) {
             VALUES (?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($query);
         $stmt->execute([
-            $pengguna_id, $no_kandidat, $id_periode, $jabatan, $created_at
+            $pengguna_id,
+            $no_kandidat,
+            $id_periode,
+            $jabatan,
+            $created_at
         ]);
 
         $query2 = "UPDATE pengguna SET role = 'kandidat' WHERE id = ?";
@@ -66,7 +81,7 @@ if (isset($_POST['kandidat'])) {
         $stmt2->execute([$pengguna_id]);
 
         header("Location: pengguna.php?msg=added");
-        exit;   
+        exit;
     } catch (PDOException $e) {
         header("Location: pengguna.php?err=" . urlencode("Gagal menambah pengguna: " . $e->getMessage()));
         exit;
@@ -106,8 +121,19 @@ if (isset($_POST['edit'])) {
                       WHERE id = ?";
             $stmt = $pdo->prepare($query);
             $stmt->execute([
-                $nik, $nama, $tempat_lahir, $tanggal_lahir, $jenis_kelamin,
-                $pendidikan, $pekerjaan, $alamat, $agama, $status_pilih, $role, $password, $updated_at,
+                $nik,
+                $nama,
+                $tempat_lahir,
+                $tanggal_lahir,
+                $jenis_kelamin,
+                $pendidikan,
+                $pekerjaan,
+                $alamat,
+                $agama,
+                $status_pilih,
+                $role,
+                $password,
+                $updated_at,
                 $id
             ]);
         } else {
@@ -117,8 +143,18 @@ if (isset($_POST['edit'])) {
                       WHERE id = ?";
             $stmt = $pdo->prepare($query);
             $stmt->execute([
-                $nik, $nama, $tempat_lahir, $tanggal_lahir, $jenis_kelamin,
-                $pendidikan, $pekerjaan, $alamat, $agama, $status_pilih, $role, $updated_at,
+                $nik,
+                $nama,
+                $tempat_lahir,
+                $tanggal_lahir,
+                $jenis_kelamin,
+                $pendidikan,
+                $pekerjaan,
+                $alamat,
+                $agama,
+                $status_pilih,
+                $role,
+                $updated_at,
                 $id
             ]);
         }
@@ -182,7 +218,6 @@ try {
     $stmt->execute(['status' => 'aktif']);
 
     $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 } catch (PDOException $e) {
     $periode_list = [];
 }
@@ -241,10 +276,10 @@ try {
         <!-- Alert Messages -->
         <?php if (isset($_GET['msg'])): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <?php 
-                    if ($_GET['msg'] == 'added') echo 'Data pengguna berhasil ditambahkan!';
-                    if ($_GET['msg'] == 'updated') echo 'Data pengguna berhasil diubah!';
-                    if ($_GET['msg'] == 'deleted') echo 'Data pengguna berhasil dihapus!';
+                <?php
+                if ($_GET['msg'] == 'added') echo 'Data pengguna berhasil ditambahkan!';
+                if ($_GET['msg'] == 'updated') echo 'Data pengguna berhasil diubah!';
+                if ($_GET['msg'] == 'deleted') echo 'Data pengguna berhasil dihapus!';
                 ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -573,7 +608,7 @@ try {
             </div>
         </div>
 
-        
+
         <div class="modal fade" id="modal-kandidat" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content rounded-4 bg-putih">
@@ -583,7 +618,7 @@ try {
                     </div>
                     <div class="modal-body">
                         <form method="POST" action="pengguna.php">
-                            <div class="row">   
+                            <div class="row">
                                 <input type="hidden" name="pengguna_id" value="<?= htmlspecialchars($data['id']) ?>">
                                 <div class="col-md-6 mb-3">
                                     <label class="col-form-label">NIK <span class="text-danger">*</span></label>
@@ -616,9 +651,9 @@ try {
                                     </select>
                                 </div>
 
-                            <div class="text-end">
-                                <button type="submit" name="kandidat" class="btn btn-success">Simpan</button>
-                            </div>
+                                <div class="text-end">
+                                    <button type="submit" name="kandidat" class="btn btn-success">Simpan</button>
+                                </div>
                         </form>
                     </div>
                 </div>
@@ -667,7 +702,60 @@ try {
                 </div>
             </div>
         </div>
+        <!-- modal import-->
+
+
     </div>
+    <!-- Modal Import Excel -->
+
+
+    <!-- Modal Import -->
+    <div class="modal fade" id="modal-import" tabindex="-1">
+        <div class="modal-dialog">
+            <form action="import.php" method="POST" enctype="multipart/form-data">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Import Data Excel</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label>Upload File Excel (.xlsx / .xls)</label>
+                        <input type="file" name="file_excel" class="form-control" accept=".xlsx,.xls" required>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-upload me-1"></i> Import</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <?php if (isset($_GET['msg']) && $_GET['msg'] == "success") : ?>
+        <!-- Modal Success -->
+        <div class="modal fade" id="modalSuccess" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content text-center">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-success"><i class="fa-solid fa-circle-check me-2"></i>Berhasil</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">Berhasil menambahkan <b><?= $_GET['jumlah']; ?></b> pengguna dari file Excel.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            var modalSuccess = new bootstrap.Modal(document.getElementById('modalSuccess'), {});
+            modalSuccess.show();
+        </script>
+    <?php endif; ?>
+
+
 
     <script src="../bootstrap/js/bootstrap.bundle.js"></script>
     <script>
@@ -698,14 +786,14 @@ try {
             modalUbah.querySelector('#ubah-nama').value = nama || '';
             modalUbah.querySelector('#ubah-tempat_lahir').value = tempat_lahir || '';
             modalUbah.querySelector('#ubah-tanggal_lahir').value = tanggal_lahir || '';
-            
+
             // Set radio button jenis kelamin
             if (jenis_kelamin === 'L') {
                 modalUbah.querySelector('#ubah_jk_l').checked = true;
             } else if (jenis_kelamin === 'P') {
                 modalUbah.querySelector('#ubah_jk_p').checked = true;
             }
-            
+
             modalUbah.querySelector('#ubah-pendidikan').value = pendidikan || '';
             modalUbah.querySelector('#ubah-pekerjaan').value = pekerjaan || '';
             modalUbah.querySelector('#ubah-alamat').value = alamat || '';

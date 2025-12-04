@@ -1,0 +1,11 @@
+{
+    "name": "rajiv/panitia",
+    "autoload": {
+        "psr-4": {
+            "Rajiv\\Panitia\\": "src/"
+        }
+    },
+    "require": {
+        "phpoffice/phpspreadsheet": "^5.3"
+    }
+}
