@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !='kandidat') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'kandidat') {
     header("Location: ../login.php");
     exit;
 }
@@ -45,7 +45,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profil</title>
+    <title>Profile </title>
     <link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../style.css">
     <link rel="import" href="navbar.php">
@@ -90,18 +90,18 @@ try {
         <div class="row p-3 py-4 rounded-4 card-bg">
             <!-- Profil -->
             <div class="col-lg-3 col-12">
-                <img src="../assets/img/Avatar Vektor Pengguna, Clipart Manusia, Pengguna Perempuan, Ikon PNG dan Vektor dengan Background Transparan untuk Unduh Gratis 6.png" class="rounded-4 d-block mx-auto mb-3 img-fit" alt="...">
+                <img src="../uploads/<?= htmlspecialchars($data['foto_profil']); ?>" class="rounded-4 d-block mx-auto mb-3 img-fit" alt="...">
                 <p class="card-title poppins-semibold">Nama</p>
-                <p class="card-text">Momo Hirai</p>
+                <p class="card-text"><?= htmlspecialchars($data['nama']); ?></p>
                 <hr>
                 <p class="card-text poppins-semibold">Pendidikan</p>
-                <p class="card-text">Diploma IV</p>
+                <p class="card-text"><?= htmlspecialchars($data['pendidikan']); ?></p>
                 <hr>
                 <p class="card-title poppins-semibold">Pekerjaan</p>
-                <p class="card-text">Wiraswasta</p>
+                <p class="card-text"><?= htmlspecialchars($data['pekerjaan']); ?></p>
                 <hr>
                 <p class="card-title poppins-semibold">Alamat</p>
-                <p class="card-text">Buana Vista Indah 2 Blok A No.48</p><br>
+                <p class="card-text"><?= htmlspecialchars($data['alamat']); ?></p><br>
                 <div class="d-grid gap-1">
                     <a href="#" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-ubah-profil-<?= htmlspecialchars($data['id_kandidat']); ?>">UBAH PROFIL
                         KANDIDAT</a>
@@ -124,7 +124,6 @@ try {
                     <p><?= nl2br(htmlspecialchars($data['misi'])); ?></p>
                 </div>
             </div>
-
         </div>
     </div>
     <!-- Modal -->
@@ -157,24 +156,40 @@ try {
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <form action="ubah_profil.php" method="POST">
+                        <form action="ubah_profil.php" method="POST" enctype="multipart/form-data">
                             <input type="hidden" name="pengguna_id" value="<?= htmlspecialchars($data['pengguna_id']); ?>">
+                            <input type="hidden" name="id_kandidat" value="<?= htmlspecialchars($data['id_kandidat']); ?>">
+                            <input type="hidden" name="foto_lama" value="<?= htmlspecialchars($data['foto_profil']); ?>">
+
                             <div class="mb-3">
-                                <label class="col-form-label">Foto <span class="text-danger"></span></label>
+                                <label class="col-form-label">Foto Profil</label>
+
+                                <!-- Tampilkan foto yang sudah ada -->
+                                <div class="mb-2">
+                                    <?php if (!empty($data['foto_profil'])): ?>
+                                        <img src="../uploads/<?= htmlspecialchars($data['foto_profil']); ?>"
+                                            alt="Foto Profil"
+                                            style="width:120px; border-radius:8px;">
+                                    <?php else: ?>
+                                        <p class="text-muted">Belum ada foto</p>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- Input upload foto -->
                                 <input type="file" name="foto_profil" class="form-control">
+                                <small class="text-muted">Format yang didukung: JPG, PNG. Max 2MB.</small>
                             </div>
+
                             <div class="mb-3">
-                                <label for="message-text" class="col-form-label">Visi : <span
-                                        class="text-danger">*</span></label>
-                                <textarea class="form-control " id="visi"
-                                    style="height: 200px;" name="visi"><?= htmlspecialchars($data['visi']); ?></textarea>
+                                <label class="col-form-label">Visi <span class="text-danger">*</span></label>
+                                <textarea class="form-control" style="height:200px;" name="visi"><?= htmlspecialchars($data['visi']); ?></textarea>
                             </div>
+
                             <div class="mb-3">
-                                <label for="message-text" class="col-form-label">Misi : <span
-                                        class="text-danger">*</span></label>
-                                <textarea class="form-control " id="misi-text"
-                                    style="height: 200px;" name="misi"><?= htmlspecialchars($data['misi']); ?></textarea>
+                                <label class="col-form-label">Misi <span class="text-danger">*</span></label>
+                                <textarea class="form-control" style="height:200px;" name="misi"><?= htmlspecialchars($data['misi']); ?></textarea>
                             </div>
+
                             <button type="submit" class="btn btn-success">Simpan</button>
                         </form>
                     </div>
