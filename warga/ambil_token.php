@@ -1,92 +1,69 @@
 <?php
 session_start();
-require_once '../koneksi.php';
-
 header('Content-Type: application/json');
 
-// Validasi user login
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] != 'warga') {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Sesi tidak valid. Silakan login kembali.'
+    ]);
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
-
-// Cek 0: Ambil dari session jika sudah ada
-if (isset($_SESSION['token_unik'])) {
-     echo json_encode([
-         'success' => true,
-         'token' => $_SESSION['token_unik'],
-         'message' => 'Token Anda telah tersimpan di sesi.'
-     ]);
-     exit;
-}
+require_once '../koneksi.php';
 
 try {
-    // CEK 1: Apakah user sudah pernah voting?
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM suara WHERE pengguna_id = ?");
-    $stmt->execute([$user_id]);
-    $sudah_voting = $stmt->fetchColumn();
+    // Start transaction
+    $pdo->beginTransaction();
     
-    if ($sudah_voting > 0) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Anda sudah melakukan voting. Token tidak dapat diambil lagi.',
-            'sudah_voting' => true
-        ]);
-        exit;
-    }
+    // Cari token yang belum diambil
+    $stmt = $pdo->prepare("
+        SELECT id, token_unik 
+        FROM token 
+        WHERE status_pengambilan = 'belum' 
+        LIMIT 1 
+        FOR UPDATE
+    ");
     
-    // CEK 2: Apakah user sudah pernah mengambil token?
-    $stmt = $pdo->prepare("SELECT token_unik, status_pengambilan FROM token WHERE id_pengguna = ?");
-    $stmt->execute([$user_id]);
-    $existing_token = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    // Jika user sudah punya token, tampilkan token yang sama
-    if ($existing_token) {
-        echo json_encode([
-            'success' => true,
-            'token' => $existing_token['token_unik'],
-            'message' => 'Ini adalah token Anda yang sudah diambil sebelumnya'
-        ]);
-        exit;
-    }
-    
-    // CEK 3: Ambil 1 token yang masih belum diambil siapapun
-    $stmt = $pdo->query("SELECT id, token_unik FROM token WHERE status_pengambilan = 'belum' AND id_pengguna IS NULL ORDER BY RAND() LIMIT 1");
+    $stmt->execute();
     $token_data = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$token_data) {
+        $pdo->rollBack();
         echo json_encode([
             'success' => false,
-            'message' => 'Maaf, semua token sudah habis. Hubungi admin.'
+            'message' => 'Tidak ada token yang tersedia saat ini.'
         ]);
         exit;
     }
     
-    // UPDATE: Assign token ke user ini
-    $stmt = $pdo->prepare("UPDATE token SET 
-        status_pengambilan = 'sudah', 
-        id_pengguna = ?,
-        waktu_diambil = NOW(),
-        updated_at = NOW() 
-        WHERE id = ?");
-    $stmt->execute([$user_id, $token_data['id']]);
+    // Update status token menjadi 'sudah' (sesuai ENUM database)
+    $update_stmt = $pdo->prepare("
+        UPDATE token 
+        SET status_pengambilan = 'sudah' 
+        WHERE id = ?
+    ");
     
-    // Simpan ke session
-    $_SESSION['token_id'] = $token_data['id'];
-    $_SESSION['token_unik'] = $token_data['token_unik'];
+    $update_stmt->execute([$token_data['id']]);
+    
+    // Commit transaction
+    $pdo->commit();
     
     echo json_encode([
         'success' => true,
         'token' => $token_data['token_unik'],
-        'message' => 'Token berhasil diambil. Simpan baik-baik! Token ini hanya untuk Anda.'
+        'message' => 'Token berhasil diambil.'
     ]);
     
 } catch (PDOException $e) {
+    // Rollback jika ada error
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    
     echo json_encode([
         'success' => false,
-        'message' => 'Error: ' . $e->getMessage()
+        'message' => 'Terjadi kesalahan: ' . $e->getMessage()
     ]);
 }
 ?>
