@@ -33,8 +33,19 @@ if (isset($_POST['tambah'])) {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($query);
         $stmt->execute([
-            $nik, $nama, $tempat_lahir, $tanggal_lahir, $jenis_kelamin,
-            $pendidikan, $pekerjaan, $alamat, $agama, $status_pilih, $role, $password, $created_at
+            $nik,
+            $nama,
+            $tempat_lahir,
+            $tanggal_lahir,
+            $jenis_kelamin,
+            $pendidikan,
+            $pekerjaan,
+            $alamat,
+            $agama,
+            $status_pilih,
+            $role,
+            $password,
+            $created_at
         ]);
 
         header("Location: pengguna.php?msg=added");
@@ -111,11 +122,21 @@ if (isset($_POST['edit'])) {
 
             $stmt = $pdo->prepare($query);
             $stmt->execute([
-                $nik, $nama, $tempat_lahir, $tanggal_lahir, $jenis_kelamin,
-                $pendidikan, $pekerjaan, $alamat, $agama, $status_pilih,
-                $role, $password, $updated_at, $id
+                $nik,
+                $nama,
+                $tempat_lahir,
+                $tanggal_lahir,
+                $jenis_kelamin,
+                $pendidikan,
+                $pekerjaan,
+                $alamat,
+                $agama,
+                $status_pilih,
+                $role,
+                $password,
+                $updated_at,
+                $id
             ]);
-
         } else {
 
             $query = "UPDATE pengguna SET
@@ -126,9 +147,19 @@ if (isset($_POST['edit'])) {
 
             $stmt = $pdo->prepare($query);
             $stmt->execute([
-                $nik, $nama, $tempat_lahir, $tanggal_lahir, $jenis_kelamin,
-                $pendidikan, $pekerjaan, $alamat, $agama, $status_pilih,
-                $role, $updated_at, $id
+                $nik,
+                $nama,
+                $tempat_lahir,
+                $tanggal_lahir,
+                $jenis_kelamin,
+                $pendidikan,
+                $pekerjaan,
+                $alamat,
+                $agama,
+                $status_pilih,
+                $role,
+                $updated_at,
+                $id
             ]);
         }
 
@@ -153,7 +184,6 @@ if (isset($_POST['edit'])) {
 
         header("Location: pengguna.php?msg=updated");
         exit;
-
     } catch (PDOException $e) {
         header("Location: pengguna.php?err=" . urlencode("Gagal mengubah pengguna: " . $e->getMessage()));
         exit;
@@ -212,7 +242,6 @@ try {
     $stmt->execute(['status' => 'tidak_aktif']);
 
     $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
 } catch (PDOException $e) {
     $periode_list = [];
 }
@@ -271,10 +300,10 @@ try {
         <!-- Alert Messages -->
         <?php if (isset($_GET['msg'])): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <?php 
-                    if ($_GET['msg'] == 'added') echo 'Data pengguna berhasil ditambahkan!';
-                    if ($_GET['msg'] == 'updated') echo 'Data pengguna berhasil diubah!';
-                    if ($_GET['msg'] == 'deleted') echo 'Data pengguna berhasil dihapus!';
+                <?php
+                if ($_GET['msg'] == 'added') echo 'Data pengguna berhasil ditambahkan!';
+                if ($_GET['msg'] == 'updated') echo 'Data pengguna berhasil diubah!';
+                if ($_GET['msg'] == 'deleted') echo 'Data pengguna berhasil dihapus!';
                 ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
@@ -458,13 +487,6 @@ try {
                                     <textarea name="alamat" class="form-control" rows="3" required></textarea>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Status Pemilihan <span class="text-danger">*</span></label>
-                                    <select name="status_pilih" class="form-control" required>
-                                        <option value="belum">Belum Memilih</option>
-                                        <option value="sudah">Sudah Memilih</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
                                     <label class="col-form-label">Role <span class="text-danger">*</span></label>
                                     <select name="role" class="form-control">
                                         <option value="warga">Warga</option>
@@ -569,13 +591,6 @@ try {
                                     <textarea name="alamat" id="ubah-alamat" class="form-control" rows="3" required></textarea>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="col-form-label">Status Pemilihan <span class="text-danger">*</span></label>
-                                    <select name="status_pilih" id="ubah-status_pilih" class="form-control" required>
-                                        <option value="belum">Belum Memilih</option>
-                                        <option value="sudah">Sudah Memilih</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
                                     <label class="col-form-label">Role <span class="text-danger">*</span></label>
                                     <select name="role" id="ubah-role" class="form-control" required>
                                         <option value="warga">Warga</option>
@@ -585,7 +600,7 @@ try {
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="col-form-label">Password <span class="text-danger">*</span> <small class="text-muted">(Kosongkan jika tidak ingin mengubah)</small></label>
-                                    <input type="password" name="password" class="form-control" >
+                                    <input type="password" name="password" class="form-control">
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="col-form-label">No Urut <span class="text-danger">*</span> <small class="text-muted">(Isi jika role kandidat)</small></label>
@@ -672,6 +687,9 @@ try {
             const agama = button.getAttribute('data-agama');
             const status_pilih = button.getAttribute('data-status_pilih');
             const role = button.getAttribute('data-role');
+            const jabatan = button.getAttribute('data-jabatan');
+            const no_kandidat = button.getAttribute('data-no_kandidat');
+
 
             // Isi form modal
             modalUbah.querySelector('#ubah-id').value = id || '';
@@ -679,20 +697,23 @@ try {
             modalUbah.querySelector('#ubah-nama').value = nama || '';
             modalUbah.querySelector('#ubah-tempat_lahir').value = tempat_lahir || '';
             modalUbah.querySelector('#ubah-tanggal_lahir').value = tanggal_lahir || '';
-            
+
             // Set radio button jenis kelamin
             if (jenis_kelamin === 'L') {
                 modalUbah.querySelector('#ubah_jk_l').checked = true;
             } else if (jenis_kelamin === 'P') {
                 modalUbah.querySelector('#ubah_jk_p').checked = true;
             }
-            
+
             modalUbah.querySelector('#ubah-pendidikan').value = pendidikan || '';
             modalUbah.querySelector('#ubah-pekerjaan').value = pekerjaan || '';
             modalUbah.querySelector('#ubah-alamat').value = alamat || '';
             modalUbah.querySelector('#ubah-agama').value = agama || '';
             modalUbah.querySelector('#ubah-status_pilih').value = status_pilih || 'belum';
             modalUbah.querySelector('#ubah-role').value = role || 'warga';
+            modalUbah.querySelector('input[name="jabatan"]').value = jabatan || '';
+            modalUbah.querySelector('input[name="no_kandidat"]').value = no_kandidat || '';
+
         });
 
         // ------------------------------------
