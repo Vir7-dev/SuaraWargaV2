@@ -16,6 +16,7 @@ try {
         k.misi,
         k.foto_profil,
         k.id_kandidat,
+        k.no_kandidat,
         p.nama,
         p.pendidikan,
         p.pekerjaan,
@@ -24,7 +25,7 @@ try {
     FROM kandidat k
     JOIN pengguna p ON k.pengguna_id = p.id
     JOIN periode pr ON k.id_periode = pr.id_periode
-    WHERE pr.status_periode = 'aktif';");
+    WHERE pr.status_periode = 'aktif' order by k.no_kandidat asc;");
 
     $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -142,14 +143,14 @@ try {
                         <div class="card rounded-4 card-bg mb-5">
 
                             <!-- Foto Kandidat -->
-                            <img src="../assets/img/photo.png"
+                            <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                 class="card-img-top p-3 img-fit"
                                 style="border-radius: 26px;"
                                 alt="Foto Kandidat">
 
                             <div class="card-body">
                                 <h1 class="card-title poppins-semibold">
-                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                 </h1>
 
                                 <hr>
@@ -199,11 +200,11 @@ try {
 
                                             <!-- Kiri -->
                                             <div class="col-lg-3 col-12">
-                                                <img src="../assets/img/photo.png"
+                                                <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
                                                     class="rounded-4 d-block mx-auto mb-3 img-fit">
 
                                                 <h1 class="card-title poppins-semibold">
-                                                    <?= htmlspecialchars($data['id_kandidat']) ?>
+                                                    <?= htmlspecialchars($data['no_kandidat']) ?>
                                                 </h1>
 
                                                 <hr>
@@ -287,7 +288,7 @@ try {
     <!-- Diagram -->
     <div class="container col-lg-12 col-10 mb-5">
         <?php if (!empty($pengguna_list)): ?>
-            <h2 class="text-center poppins-bold mb-5">Hasil Sementara<?= ($pengguna_list[0]['nama_periode']) ?></h2>
+            <h2 class="text-center poppins-bold mb-5">Hasil <?= ($pengguna_list[0]['nama_periode']) ?></h2>
         <?php else: ?>
             <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dihitung</h2>
         <?php endif; ?>
@@ -378,12 +379,16 @@ try {
                         </div>
                         <div class="container-fluid">
                             <div class="row">
-                                <h5 class="text-center mt-0 mb-3">Ini adalah token Anda. <b>Harap simpan dengan baik</b>
-                                    dan jangan dibagikan kepada orang lain!</h5>
+                                <h5 class="text-center mt-0 mb-3" id="modal-token-title">
+                                    Ini adalah token Anda. <b>Harap simpan dengan baik</b> dan jangan dibagikan kepada orang lain!
+                                </h5>
                                 <div class="d-grid">
-                                    <button type="button" class="btn btn-dark border-0"><i class="fa-solid fa-copy"></i>
-                                        15042007</button>
+                                    <button type="button" id="btn-copy-token" class="btn btn-dark border-0">
+                                        <i class="fa-solid fa-spinner fa-spin" id="loading-token"></i>
+                                        <span id="token-display">Memuat token...</span>
+                                    </button>
                                 </div>
+                                <small class="text-center mt-2 text-muted" id="modal-token-subtitle">Klik untuk menyalin token</small>
                             </div>
                         </div>
                     </div>
@@ -467,6 +472,217 @@ try {
     <script>
         AOS.init();
     </script>
+    <script>
+    let userToken = null;
+
+    // Ambil token saat modal dibuka
+    document.getElementById('modal-ambil-token').addEventListener('show.bs.modal', function() {
+        // Reset display setiap kali modal dibuka
+        const btnCopy = document.getElementById('btn-copy-token');
+        const loading = document.getElementById('loading-token');
+        const display = document.getElementById('token-display');
+        
+        // Reset ke state awal
+        btnCopy.className = 'btn btn-dark border-0';
+        loading.classList.remove('d-none');
+        display.textContent = 'Memuat token...';
+        
+        if (userToken) {
+            displayToken(userToken);
+            return;
+        }
+
+        fetch('ambil_token.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    userToken = data.token;
+                    displayToken(data.token);
+                } else {
+                    // Tampilkan error di dalam modal
+                    displayError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                displayError('Terjadi kesalahan saat mengambil token');
+            });
+    });
+
+    // Tampilkan token dan enable copy
+    // Tampilkan token dan enable copy
+function displayToken(token) {
+    const loading = document.getElementById('loading-token');
+    const display = document.getElementById('token-display');
+    const btnCopy = document.getElementById('btn-copy-token');
+    const title = document.getElementById('modal-token-title');
+    const subtitle = document.getElementById('modal-token-subtitle');
+    
+    // Show title for success
+    if (title) {
+        title.innerHTML = 'Ini adalah token Anda. <b>Harap simpan dengan baik</b> dan jangan dibagikan kepada orang lain!';
+    }
+    
+    // Show subtitle
+    if (subtitle) {
+        subtitle.classList.remove('d-none');
+    }
+    
+    // Show button
+    if (btnCopy) {
+        btnCopy.classList.remove('d-none');
+        btnCopy.className = 'btn btn-dark border-0';
+    }
+    
+    if (loading) loading.classList.add('d-none');
+    if (display) display.innerHTML = `<i class="fa-solid fa-copy me-2"></i>${token}`;
+    
+    if (btnCopy) {
+        btnCopy.onclick = function() {
+            copyToClipboard(token);
+        };
+    }
+}
+
+// Tampilkan error di dalam modal
+function displayError(message) {
+    const loading = document.getElementById('loading-token');
+    const display = document.getElementById('token-display');
+    const btnCopy = document.getElementById('btn-copy-token');
+    const title = document.getElementById('modal-token-title');
+    const subtitle = document.getElementById('modal-token-subtitle');
+    
+    // Change title for error
+    if (title) {
+        title.innerHTML = message;
+    }
+    
+    // Hide subtitle
+    if (subtitle) {
+        subtitle.classList.add('d-none');
+    }
+    
+    if (loading) loading.classList.add('d-none');
+    
+    // Hide the button completely
+    if (btnCopy) btnCopy.classList.add('d-none');
+    
+    // Clear the display area
+    if (display) {
+        display.innerHTML = '';
+    }
+}
+
+    // Copy token ke clipboard
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Tampilkan feedback sukses
+            const btnCopy = document.getElementById('btn-copy-token');
+            const originalHTML = btnCopy.innerHTML;
+            
+            btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
+            btnCopy.classList.add('btn-success');
+            btnCopy.classList.remove('btn-dark');
+            
+            setTimeout(() => {
+                btnCopy.innerHTML = originalHTML;
+                btnCopy.classList.remove('btn-success');
+                btnCopy.classList.add('btn-dark');
+            }, 1500);
+        }).catch(function(err) {
+            // Fallback untuk browser lama
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const btnCopy = document.getElementById('btn-copy-token');
+            const originalHTML = btnCopy.innerHTML;
+            
+            btnCopy.innerHTML = '<i class="fa-solid fa-check me-2"></i>Tersalin!';
+            btnCopy.classList.add('btn-success');
+            btnCopy.classList.remove('btn-dark');
+            
+            setTimeout(() => {
+                btnCopy.innerHTML = originalHTML;
+                btnCopy.classList.remove('btn-success');
+                btnCopy.classList.add('btn-dark');
+            }, 1500);
+        });
+    }
+
+    // Submit voting
+    function submitVote(event, kandidatId) {
+        event.preventDefault();
+
+        const form = event.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const spinner = submitBtn.querySelector('.spinner-border');
+        const tokenInput = form.querySelector('input[name="token"]');
+
+        // Disable button dan tampilkan loading
+        submitBtn.disabled = true;
+        btnText.classList.add('d-none');
+        spinner.classList.remove('d-none');
+
+        const formData = new FormData();
+        formData.append('kandidat_id', kandidatId);
+        formData.append('token', tokenInput.value);
+
+        fetch('proses_pilih.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: data.message,
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: data.message
+                    });
+
+                    // Reset button
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('d-none');
+                    spinner.classList.add('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Terjadi kesalahan saat memproses voting'
+                });
+
+                // Reset button
+                submitBtn.disabled = false;
+                btnText.classList.remove('d-none');
+                spinner.classList.add('d-none');
+            });
+
+        return false;
+    }
+</script>
     <script src="../script.js"></script>
 </body>
 
