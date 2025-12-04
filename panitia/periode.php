@@ -19,6 +19,18 @@ if (isset($_POST['tambah'])) {
     $status_periode = $_POST['status_periode'] ?? 'tidak_aktif';
 
     try {
+        // (TAMBAH) check, ada periode aktif?
+        if ($status_periode === 'aktif') {
+            $checkQuery = "SELECT COUNT(*) FROM periode WHERE status_periode = 'aktif'";
+            $checkStmt = $pdo->query($checkQuery);
+            $activeCount = $checkStmt->fetchColumn();
+            
+            if ($activeCount > 0) {
+                header("Location: periode.php?err=" . urlencode("Tidak dapat menambah periode aktif, Sudah ada periode yang aktif saat ini."));
+                exit;
+            }
+        }
+
         $query = "INSERT INTO periode (nama_periode, mulai, selesai, status_periode)
                   VALUES (?, ?, ?, ?)";
         $stmt = $pdo->prepare($query);
@@ -48,6 +60,19 @@ if (isset($_POST['edit'])) {
     }
 
     try {
+        // (EDIT) check, ada periode aktif?
+        if ($status_periode === 'aktif') {
+            $checkQuery = "SELECT COUNT(*) FROM periode WHERE status_periode = 'aktif' AND id_periode != ?";
+            $checkStmt = $pdo->prepare($checkQuery);
+            $checkStmt->execute([$id_periode]);
+            $activeCount = $checkStmt->fetchColumn();
+            
+            if ($activeCount > 0) {
+                header("Location: periode.php?err=" . urlencode("Tidak dapat mengaktifkan periode, Sudah ada periode yang aktif saat ini."));
+                exit;
+            }
+        }
+
         $query = "UPDATE periode SET
                     nama_periode = ?, mulai = ?, selesai = ?, status_periode = ?
                   WHERE id_periode = ?";
