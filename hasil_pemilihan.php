@@ -1,8 +1,10 @@
 <?php
-include "koneksi.php";
+// FILE: hasil_pemilihan.php
+
+// Pastikan 'koneksi.php' sudah di-include di generate_pdf.php sebelum file ini di-include.
 
 // ------------------
-// QUERY KANDIDAT
+// QUERY KANDIDAT & DATA PROCESSING (TIDAK BERUBAH)
 // ------------------
 $kandidatQuery = $pdo->query("
     SELECT 
@@ -16,9 +18,6 @@ $kandidatQuery = $pdo->query("
 ");
 $kandidatList = $kandidatQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// ------------------
-// QUERY SUARA PER KANDIDAT
-// ------------------
 $suaraQuery = $pdo->query("
     SELECT 
         kandidat_id,
@@ -28,109 +27,157 @@ $suaraQuery = $pdo->query("
 ");
 $suaraData = $suaraQuery->fetchAll(PDO::FETCH_ASSOC);
 
-// Total semua suara
 $totalSuara = $pdo->query("SELECT COUNT(*) FROM suara")->fetchColumn();
 
-// ------------------
-// GABUNGKAN SUARA KE KANDIDAT
-// ------------------
 foreach ($kandidatList as $key => $k) {
     $total = 0;
-
     foreach ($suaraData as $s) {
         if ($s['kandidat_id'] == $k['id_kandidat']) {
             $total = $s['total_suara'];
         }
     }
-
-    // Total suara
     $kandidatList[$key]['total_suara'] = $total;
-
-    // Persentase
     $kandidatList[$key]['persentase'] = ($totalSuara > 0)
         ? number_format(($total / $totalSuara) * 100, 2)
         : 0;
 }
 
+$colors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6610f2'];
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard Perolehan Suara</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    <title>Laporan Perolehan Suara</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 25px;
-            background: #f5f5f5;
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 400;
+            src: url(https://fonts.gstatic.com/s/poppins/v20/pxiEyp8kSU5KZyEAAIzDQA.woff2) format('woff2');
         }
-
-        h1 {
+        @font-face {
+            font-family: 'Poppins';
+            font-style: normal;
+            font-weight: 700;
+            src: url(https://fonts.gstatic.com/s/poppins/v20/pxiByp8kSU5KZyEAAIzHdA.woff2) format('woff2');
+        }
+        /* CSS yang ramah dompdf */
+        body { 
+            font-family: sans-serif; 
+            margin: 30px; 
+            color: #333; 
+            /* PENTING: Gunakan text-align: center pada body untuk konten tengah */
             text-align: center;
-            margin-bottom: 20px;
         }
-
-        .card-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            justify-content: center;
-            margin-bottom: 40px;
+        
+        /* Kontainer Utama untuk membatasi lebar */
+        .container {
+            max-width: 700px; /* Batasi lebar agar konten tidak terlalu lebar di PDF */
+            margin: 0 auto; /* Tengah-kan kontainer utama */
+            text-align: left; /* Kembalikan alignment teks di dalam kontainer ke kiri */
         }
-
-        .card {
-            background: white;
-            padding: 20px;
-            width: 280px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .card h3 {
-            margin: 0 0 10px;
-        }
-
-        .progress {
-            background: #dcdcdc;
-            border-radius: 10px;
-            height: 18px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .progress-bar {
-            background: #28a745;
-            height: 18px;
+        
+        h1 { 
+            color: #1e3d59; 
+            font-size: 24px; 
+            margin-bottom: 5px; 
             text-align: center;
-            color: white;
+        }
+        
+        .date-info {
+            text-align: center;
             font-size: 12px;
-            line-height: 18px;
+            color: #666;
+            margin-bottom: 25px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
         }
+
+        .total-info { 
+            text-align: center; 
+            margin: 20px 0; 
+            padding: 10px; 
+            background-color: #f0f8ff; 
+            border: 1px solid #007bff; 
+            border-radius: 5px; 
+            font-size: 16px; 
+            font-weight: bold; 
+        }
+        
+        .card-container { 
+            max-width: 600px;
+            display: block; 
+            /* Menggunakan margin negatif dan lebar kontainer untuk meniru flex/gap */
+            margin: 0 auto; 
+            text-align: center; /* PENTING: Untuk menengahkan float elements */
+        } 
+        
+        .card {
+            background: #ffffff;
+            padding: 15px;
+            width: 100%; 
+            margin: 10px 1%; 
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            page-break-inside: avoid;
+            text-align: left; /* Teks di dalam card tetap rata kiri */
+            display: inline-block; /* Alternatif untuk float di dompdf */
+        }
+
+        .card h3 { 
+            font-size: 18px; 
+            color: #007bff; 
+            margin: 0 0 5px; 
+            padding-bottom: 5px; 
+        }
+        
+        .progress-bar { height: 12px; border-radius: 8px; }
+        .clearfix::after { content: ""; clear: both; display: table; }
+
     </style>
 </head>
 
 <body>
 
-    <h1>Dashboard Perolehan Suara Kandidat</h1>
+    <div class="container">
+        <h1>Laporan Resmi Perolehan Suara Kandidat</h1>
+        
+        <div class="date-info">
+            Dicetak pada: <?= date('d F Y, H:i:s'); ?> WIB
+        </div>
+        
+        <div class="total-info">
+            Total Suara Masuk: <span><?= number_format($totalSuara, 0, ',', '.'); ?></span>
+        </div>
 
-    <!-- CARD KANDIDAT -->
-    <div class="card-container">
-        <?php foreach ($kandidatList as $data): ?>
-            <div class="card">
-                <h3><?= htmlspecialchars($data['nama']); ?> (No <?= $data['no_kandidat']; ?>)</h3>
-                <p><strong>Total Suara:</strong> <?= $data['total_suara']; ?></p>
-                <p><strong>Persentase:</strong> <?= $data['persentase']; ?>%</p>
+        <div class="card-container clearfix">
+            <?php 
+            $i = 0;
+            foreach ($kandidatList as $data): 
+            $color = $colors[$i % count($colors)];
+            ?>
+                <div class="card" style="border-left: 5px solid <?= $color ?>;">
+                    <h3><?= htmlspecialchars($data['nama']); ?> (No <?= $data['no_kandidat']; ?>)</h3>
+                    
+                    <p><strong>Jumlah Suara:</strong> <?= number_format($data['total_suara'], 0, ',', '.'); ?></p>
 
-                <div class="progress">
-                    <div class="progress-bar" style="width: <?= $data['persentase']; ?>%;">
-                        <?= $data['persentase']; ?>%
+                    <div class="progress-section">
+                        <span style="float: right; font-weight: bold; color: <?= $color ?>;"><?= $data['persentase']; ?>%</span>
+                        <p style="margin: 0; font-weight: 600; margin-bottom: 10px;">Persentase Perolehan</p>
+                        <div class="progress" style="background: #e9ecef; border-radius: 8px; overflow: hidden;">
+                            <div class="progress-bar" style="width: <?= $data['persentase']; ?>%; background-color: <?= $color ?>;">
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
+            <?php 
+            $i++;
+            endforeach; ?>
+        </div>
+        <div class="clearfix"></div> 
     </div>
 
 </body>
