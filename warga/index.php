@@ -509,7 +509,7 @@ try {
                                         name="token"
                                         id="token-input-<?= htmlspecialchars($data['id_kandidat']) ?>"
                                         placeholder="Masukkan Token Anda"
-                                        class="form-control text-center mb-2"
+                                        class="btn btn-dark text-center mb-2"
                                         required
                                         maxlength="8"
                                         pattern="[a-zA-Z0-9]{5,8}">
