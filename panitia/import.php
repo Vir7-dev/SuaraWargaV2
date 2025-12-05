@@ -47,7 +47,7 @@ if (isset($_FILES['file_excel']['name'])) {
 
     echo "<script>
             alert('Data berhasil diimport!');
-            window.location.href='pengguna1.php';
+            window.location.href='pengguna.php';
           </script>";
     exit;
 }
