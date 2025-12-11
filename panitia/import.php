@@ -27,7 +27,7 @@ if (isset($_FILES['file_excel']['name'])) {
         $agama          = $row['I'];
         $status_pilih   = $row['J'];
         $role           = $row['K'];
-        $password       = password_hash($row['L'], PASSWORD_DEFAULT); // Enkripsi password
+        $password       = password_hash($row['A'], PASSWORD_DEFAULT); // Enkripsi password
         $status_ambil   = $row['M'];
 
         if (empty($nik)) continue; // skip jika kosong
