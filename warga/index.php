@@ -325,14 +325,13 @@ try {
     <!-- Diagram -->
     <div class="container col-lg-12 col-10 mb-5">
         <?php if (!empty($pengguna_list)): ?>
-            <h2 class="text-center poppins-bold mb-5">Hasil <?= ($pengguna_list[0]['nama_periode']) ?></h2>
+            <h2 class="text-center poppins-bold mb-5">Hasil Sementara <?= ($pengguna_list[0]['nama_periode']) ?></h2>
         <?php else: ?>
             <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dihitung</h2>
         <?php endif; ?>
         <div class="row p-3 py-4 gap-4 gap-md-0 rounded-4 card-bg">
             <div class="col-12 flex-md-row flex-column d-flex justify-content-between align-items-center mb-3">
-                <h2 class="text-left poppins-bold text-putih">Hasil Pemilihan</h2>
-                <a href="../generate.php" class="text-sedang btn btn-dark">CETAK PEMILIHAN</a>
+                <h2 class="text-left poppins-bold text-putih">Hasil Pemilihan Sementara</h2>
             </div>
             <div class="col-lg-8">
 

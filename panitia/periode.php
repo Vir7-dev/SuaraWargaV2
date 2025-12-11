@@ -210,7 +210,7 @@ try {
                                 <th>MULAI</th>
                                 <th>BERAKHIR</th>
                                 <th>STATUS</th>
-                                <th style="width: 10%;">AKSI</th>
+                                <th style="width: 15%;">AKSI</th>
                             </tr>
                         </thead>
                         <tbody id="t-body">
@@ -231,6 +231,11 @@ try {
                                         </td>
 
                                         <td>
+                                            <button type="button"
+                                                class="btn btn-sm btn-success"
+                                                onclick="window.location.href='../generate.php?id_periode=<?= htmlspecialchars($data['id_periode']) ?>'">
+                                                <i class="fa-solid fa-print"></i>
+                                            </button>
                                             <button type="button" class="btn btn-sm btn-warning me-2"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modal-ubah"
@@ -241,7 +246,7 @@ try {
                                                 data-status="<?= htmlspecialchars($data['status_periode']) ?>">
                                                 <i class="fa-solid fa-edit"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-danger"
+                                            <button type="button" class="btn btn-sm btn-danger me-2"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modal-hapus"
                                                 data-id-hapus="<?= htmlspecialchars($data['id_periode']) ?>">
