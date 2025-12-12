@@ -806,7 +806,7 @@ try {
         </div>
         <!-- Modal KELUAR -->
         <div class="modal fade" id="modal-keluar" tabindex="-1" aria-labelledby="keluar" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content bg-putih">
                     <div class="modal-body">
                         <div class="text-end">

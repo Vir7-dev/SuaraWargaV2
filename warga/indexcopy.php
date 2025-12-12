@@ -185,7 +185,7 @@ try {
     <div class="container mb-5">
         <?php if ($periode_aktif): ?>
             <h2 class="text-center poppins-bold mb-5">
-                <?= htmlspecialchars($periode_aktif['nama_periode']) ?>
+                Hasil <?= htmlspecialchars($periode_aktif['nama_periode']) ?>
             </h2>
         <?php else: ?>
             <h2 class="text-center poppins-bold mb-5">Periode pemilihan belum dimulai</h2>

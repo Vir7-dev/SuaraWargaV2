@@ -37,6 +37,33 @@ try {
     $error_fetch = "Gagal mengambil data periode.";
     $data = [];
 }
+try {
+    $stmt = $pdo->prepare("
+        SELECT id_periode
+        FROM periode
+        WHERE status_periode = 'aktif'
+        LIMIT 1
+    ");
+    $stmt->execute();
+
+    $periode_aktif = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $periode_aktif = null;
+}
+try {
+    $stmt = $pdo->prepare("
+        SELECT *
+        FROM periode
+        WHERE status_periode = 'tidak_aktif'
+        ORDER BY id_periode DESC
+        LIMIT 1
+    ");
+    $stmt->execute();
+
+    $periode_tidak_aktif = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $periode_tidak_aktif = null;
+}
 ?>
 
 <!DOCTYPE html>
@@ -105,10 +132,17 @@ try {
                 <hr>
                 <p class="card-title poppins-semibold">Alamat</p>
                 <p class="card-text"><?= htmlspecialchars($data['alamat']); ?></p><br>
-                <div class="d-grid gap-1">
-                    <a href="#" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-ubah-profil-<?= htmlspecialchars($data['id_kandidat']); ?>">UBAH PROFIL
-                        KANDIDAT</a>
-                </div>
+                <?php if ($periode_aktif): ?>
+                    <div class="d-grid gap-1">
+                        <button href="#" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-ubah-profil-<?= htmlspecialchars($data['id_kandidat']); ?>" disabled>UBAH PROFIL
+                            KANDIDAT</button>
+                    </div>
+                <?php else: ?>
+                    <div class="d-grid gap-1">
+                        <button href="#" class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-ubah-profil-<?= htmlspecialchars($data['id_kandidat']); ?>">UBAH PROFIL
+                            KANDIDAT</button>
+                    </div>
+                <?php endif; ?>
             </div>
             <!-- Visi Misi -->
             <div class="col-lg-9 col-12 ms-auto mt-4 text-putih">
