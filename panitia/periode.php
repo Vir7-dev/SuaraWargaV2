@@ -270,6 +270,7 @@ try {
                                                     <i class="fa-solid fa-print"></i>
                                                 </button>
                                             <?php endif; ?>
+                                            <?php if ($data['status_periode'] == 'tidak_aktif'): ?>
                                             <button type="button" class="btn btn-sm btn-warning me-2"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modal-ubah"
@@ -280,6 +281,13 @@ try {
                                                 data-status="<?= htmlspecialchars($data['status_periode']) ?>">
                                                 <i class="fa-solid fa-edit"></i>
                                             </button>
+                                            <?php else: ?>
+                                            <button type="button" class="btn btn-sm btn-warning me-2"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modal-ubah" disabled>
+                                                <i class="fa-solid fa-edit"></i>
+                                            </button>
+                                            <?php endif; ?>
                                             <button type="button" class="btn btn-sm btn-danger me-2"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modal-hapus"
