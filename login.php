@@ -56,6 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SUARAWARGA - Login</title>
+  <link rel="icon" type="image/png" href="./assets/img/logo.png">
   <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="fontawesome/css/all.min.css">
   <link rel="stylesheet" href="style.css" />
