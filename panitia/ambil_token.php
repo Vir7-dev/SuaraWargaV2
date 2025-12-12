@@ -43,7 +43,7 @@ try {
         $pdo->rollBack();
         echo json_encode([
             'success' => false,
-            'message' => 'Anda sudah pernah mengambil token sebelumnya. Setiap pengguna hanya dapat mengambil 1 token.',
+            'message' => 'Anda sudah pernah mengambil token sebelumnya. Setiap pengguna <b>hanya dapat mengambil 1 token.</b>',
             'show_in_modal' => true
         ]);
         exit;

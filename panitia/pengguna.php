@@ -173,6 +173,9 @@ if (isset($_POST['edit'])) {
         // ================================================================
         // HAPUS DATA KANDIDAT JIKA ROLE DIUBAH KE WARGA/PANITIA
         // ================================================================
+        // ================================================================
+        // HAPUS DATA KANDIDAT JIKA ROLE DIUBAH KE WARGA/PANITIA
+        // ================================================================
         if (($role === 'warga' || $role === 'panitia') && $oldRole === 'kandidat') {
 
             $deleteKandidat = $pdo->prepare("DELETE FROM kandidat WHERE pengguna_id = ?");
@@ -181,24 +184,59 @@ if (isset($_POST['edit'])) {
 
 
         // ================================================================
-        // INSERT DATA KANDIDAT JIKA ROLE = KANDIDAT
+        // PROSES DATA KANDIDAT (INSERT/UPDATE SESUAI ALUR)
         // ================================================================
-        if ($role === 'kandidat' && !empty($id_p)) {
+        if ($role === 'kandidat') {
 
-            $cek = $pdo->prepare("SELECT id_kandidat FROM kandidat 
-                                  WHERE pengguna_id = ? AND id_periode = ?");
+            // Cek apakah kandidat untuk periode ini sudah ada
+            $cek = $pdo->prepare("
+        SELECT id_kandidat 
+        FROM kandidat 
+        WHERE pengguna_id = ? 
+          AND id_periode = ?
+        LIMIT 1
+    ");
             $cek->execute([$id, $id_p]);
+            $existingKandidat = $cek->fetch(PDO::FETCH_ASSOC);
 
-            if ($cek->rowCount() === 0) {
+            if ($existingKandidat) {
+                // ============================================================
+                // 3️⃣ UPDATE JIKA SUDAH ADA KANDIDAT DI PERIODE YANG SAMA
+                // ============================================================
 
-                $insert = $pdo->prepare("
-                    INSERT INTO kandidat (id_periode, jabatan, no_kandidat, pengguna_id, visi, misi, created_at)
-                    VALUES (?, ?, ?, ?, '', '', NOW())
-                ");
+                $updateKandidat = $pdo->prepare("
+            UPDATE kandidat
+            SET jabatan = ?, no_kandidat = ?, updated_at = NOW()
+            WHERE id_kandidat = ?
+        ");
 
-                $insert->execute([$id_p, $jabatan, $no, $id]);
+                $updateKandidat->execute([
+                    $jabatan,
+                    $no,
+                    $existingKandidat['id_kandidat']
+                ]);
+            } else {
+                // ============================================================
+                // 1️⃣ & 2️⃣ INSERT JIKA:
+                // - Belum pernah menjadi kandidat sebelumnya, ATAU
+                // - Pernah jadi kandidat tetapi periode berbeda
+                // ============================================================
+
+                $insertKandidat = $pdo->prepare("
+            INSERT INTO kandidat 
+                (id_periode, pengguna_id, no_kandidat, jabatan, visi, misi, created_at)
+            VALUES (?, ?, ?, ?, '', '', NOW())
+        ");
+
+                $insertKandidat->execute([
+                    $id_p,
+                    $id,
+                    $no,
+                    $jabatan
+                ]);
             }
         }
+
 
         header("Location: pengguna.php?msg=updated");
         exit;
@@ -235,56 +273,79 @@ $search_param = '%' . $search . '%';
 
 try {
     if (!empty($search)) {
-        $stmt = $pdo->prepare("SELECT 
-            p.id,
-            p.nik,
-            p.nama,
-            p.tempat_lahir,
-            p.tanggal_lahir,
-            p.jenis_kelamin,
-            p.pendidikan,
-            p.pekerjaan,
-            p.alamat,
-            p.agama,
-            p.status_pilih,
-            p.role,
-            k.id_kandidat,
-            k.id_periode,
-            k.no_kandidat,
-            k.foto_profil,
-            k.jabatan,
-            k.visi,
-            k.misi
-        FROM pengguna p
-        LEFT JOIN kandidat k ON k.pengguna_id = p.id
-        WHERE nik LIKE ? OR nama LIKE ?
-        ORDER BY p.role ASC");
+        $stmt = $pdo->prepare("SELECT
+        p.id,
+        p.nik,
+        p.nama,
+        p.tempat_lahir,
+        p.tanggal_lahir,
+        p.jenis_kelamin,
+        p.pendidikan,
+        p.pekerjaan,
+        p.alamat,
+        p.agama,
+        p.status_pilih,
+        p.role,
+
+        -- kandidat terbaru
+        k.id_kandidat,
+        k.id_periode,
+        k.no_kandidat,
+        k.foto_profil,
+        k.jabatan,
+        k.visi,
+        k.misi
+
+    FROM pengguna p
+
+    LEFT JOIN kandidat k 
+        ON k.id_kandidat = (
+            SELECT id_kandidat 
+            FROM kandidat 
+            WHERE pengguna_id = p.id
+            ORDER BY id_periode DESC 
+            LIMIT 1
+        )
+
+    WHERE p.nik LIKE ? OR p.nama LIKE ?
+    ORDER BY p.role ASC");
         $stmt->execute([$search_param, $search_param]);
     } else {
-        $stmt = $pdo->query("SELECT 
-            p.id,
-            p.nik,
-            p.nama,
-            p.tempat_lahir,
-            p.tanggal_lahir,
-            p.jenis_kelamin,
-            p.pendidikan,
-            p.pekerjaan,
-            p.alamat,
-            p.agama,
-            p.status_pilih,
-            p.role,
-            k.id_kandidat,
-            k.id_periode,
-            k.no_kandidat,
-            k.foto_profil,
-            k.jabatan,
-            k.visi,
-            k.misi
-        FROM pengguna p
-        LEFT JOIN kandidat k ON k.pengguna_id = p.id
-        ORDER BY p.role ASC;
-        ");
+        $stmt = $pdo->prepare("SELECT
+        p.id,
+        p.nik,
+        p.nama,
+        p.tempat_lahir,
+        p.tanggal_lahir,
+        p.jenis_kelamin,
+        p.pendidikan,
+        p.pekerjaan,
+        p.alamat,
+        p.agama,
+        p.status_pilih,
+        p.role,
+
+        -- kandidat terbaru
+        k.id_kandidat,
+        k.id_periode,
+        k.no_kandidat,
+        k.foto_profil,
+        k.jabatan,
+        k.visi,
+        k.misi
+
+    FROM pengguna p
+
+    LEFT JOIN kandidat k 
+        ON k.id_kandidat = (
+            SELECT id_kandidat 
+            FROM kandidat 
+            WHERE pengguna_id = p.id
+            ORDER BY id_periode DESC 
+            LIMIT 1
+        )
+    ORDER BY p.role ASC");
+        $stmt->execute();
     }
     $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -292,16 +353,30 @@ try {
 }
 try {
     $stmt = $pdo->prepare("
+        SELECT id_periode
+        FROM periode
+        WHERE status_periode = 'aktif'
+        LIMIT 1
+    ");
+    $stmt->execute();
+
+    $periode_aktif = $stmt->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $periode_aktif = null;
+}
+try {
+    $stmt = $pdo->prepare("
         SELECT *
         FROM periode
-        WHERE status_periode = :status
+        WHERE status_periode = 'tidak_aktif'
         ORDER BY id_periode DESC
+        LIMIT 1
     ");
-    $stmt->execute(['status' => 'tidak_aktif']);
+    $stmt->execute();
 
-    $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $periode_tidak_aktif = $stmt->fetch(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
-    $periode_list = [];
+    $periode_tidak_aktif = null;
 }
 
 ?>
@@ -384,10 +459,17 @@ try {
                     <button class="btn btn-putih rounded-0 rounded-end-4 border-2" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
                 </form>
             </div>
+            <?php if ($periode_aktif): ?>
+             <div class="col-4 text-end">
+                <button type="button" class="btn btn-success poppins-bold shadow" data-bs-toggle="modal" data-bs-target="#modal-pengguna" disabled><i class="fa-solid fa-circle-plus me-2"></i>TAMBAH</button>
+                <button type="button" class="btn btn-success poppins-bold shadow" data-bs-toggle="modal" data-bs-target="#modal-import" disabled><i class="fa-solid fa-upload me-2"></i>IMPORT</button>
+            </div>
+            <?php else: ?>
             <div class="col-4 text-end">
                 <button type="button" class="btn btn-success poppins-bold shadow" data-bs-toggle="modal" data-bs-target="#modal-pengguna"><i class="fa-solid fa-circle-plus me-2"></i>TAMBAH</button>
                 <button type="button" class="btn btn-success poppins-bold shadow" data-bs-toggle="modal" data-bs-target="#modal-import"><i class="fa-solid fa-upload me-2"></i>IMPORT</button>
             </div>
+            <?php endif; ?>
         </div>
         <div class="row">
             <div class="col-12 mt-3">
@@ -430,32 +512,50 @@ try {
                                         <td><?= htmlspecialchars($data['role']) ?></td>
 
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-warning me-2"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modal-ubah"
-                                                data-id="<?= $data['id'] ?>"
-                                                data-nik="<?= $data['nik'] ?>"
-                                                data-nama="<?= $data['nama'] ?>"
-                                                data-tempat_lahir="<?= $data['tempat_lahir'] ?>"
-                                                data-tanggal_lahir="<?= $data['tanggal_lahir'] ?>"
-                                                data-jenis_kelamin="<?= $data['jenis_kelamin'] ?>"
-                                                data-pendidikan="<?= $data['pendidikan'] ?>"
-                                                data-pekerjaan="<?= $data['pekerjaan'] ?>"
-                                                data-alamat="<?= $data['alamat'] ?>"
-                                                data-agama="<?= $data['agama'] ?>"
-                                                data-status_pilih="<?= $data['status_pilih'] ?>"
-                                                data-role="<?= $data['role'] ?>"
-                                                data-jabatan="<?= $data['jabatan'] ?>"
-                                                data-no-kandidat="<?= $data['no_kandidat'] ?>"
-                                                data-id-periode="<?= $data['id_periode'] ?>">
-                                                <i class="fa-solid fa-edit"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-danger"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#modal-hapus"
-                                                data-id-hapus="<?= htmlspecialchars($data['id']) ?>">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </button>
+                                            <?php if ($periode_aktif): ?>
+
+                                                <!-- DISABLED -->
+                                                <button type="button" class="btn btn-sm btn-warning me-2" disabled>
+                                                    <i class="fa-solid fa-edit"></i>
+                                                </button>
+
+                                                <button type="button" class="btn btn-sm btn-danger" disabled>
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+
+                                            <?php else: ?>
+
+                                                <!-- ENABLED -->
+                                                <button type="button" class="btn btn-sm btn-warning me-2"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modal-ubah"
+                                                    data-id="<?= $data['id'] ?>"
+                                                    data-nik="<?= $data['nik'] ?>"
+                                                    data-nama="<?= $data['nama'] ?>"
+                                                    data-tempat_lahir="<?= $data['tempat_lahir'] ?>"
+                                                    data-tanggal_lahir="<?= $data['tanggal_lahir'] ?>"
+                                                    data-jenis_kelamin="<?= $data['jenis_kelamin'] ?>"
+                                                    data-pendidikan="<?= $data['pendidikan'] ?>"
+                                                    data-pekerjaan="<?= $data['pekerjaan'] ?>"
+                                                    data-alamat="<?= $data['alamat'] ?>"
+                                                    data-agama="<?= $data['agama'] ?>"
+                                                    data-status_pilih="<?= $data['status_pilih'] ?>"
+                                                    data-role="<?= $data['role'] ?>"
+                                                    data-jabatan="<?= $data['jabatan'] ?>"
+                                                    data-no-kandidat="<?= $data['no_kandidat'] ?>"
+                                                    data-id-periode="<?= $data['id_periode'] ?>">
+                                                    <i class="fa-solid fa-edit"></i>
+                                                </button>
+
+                                                <button type="button" class="btn btn-sm btn-danger"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#modal-hapus"
+                                                    data-id-hapus="<?= htmlspecialchars($data['id']) ?>">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+
+                                            <?php endif; ?>
+
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -585,12 +685,11 @@ try {
                         <form method="POST" action="pengguna.php">
                             <input type="hidden" name="id" id="ubah-id">
                             <div class="row">
-                                <?php if (!empty($periode_list)): ?>
-                                    <?php foreach ($periode_list as $p): ?>
-                                        <input type="hidden" name="id_periode" value="<?= htmlspecialchars($p['id_periode']) ?>">
-                                    <?php endforeach; ?>
+                                <?php if ($periode_tidak_aktif): ?>
+                                    <input type="hidden" name="id_periode" id="ubah-id-periode"
+                                        value="<?= htmlspecialchars($periode_tidak_aktif['id_periode']) ?>">
                                 <?php else: ?>
-                                    <p>Tidak ada periode aktif.</p>
+                                    <input type="hidden" name="id_periode" id="ubah-id-periode" value="">
                                 <?php endif; ?>
                                 <div class="col-md-6 mb-3">
                                     <label class="col-form-label">NIK <span class="text-danger">*</span></label>
@@ -756,6 +855,7 @@ try {
         const modalUbah = document.getElementById('modal-ubah');
 
         modalUbah.addEventListener('show.bs.modal', event => {
+
             const button = event.relatedTarget;
 
             // Ambil data dari tombol
@@ -821,6 +921,29 @@ try {
             const jabatanEl = modalUbah.querySelector('#ubah-jabatan');
             if (jabatanEl) {
                 jabatanEl.value = jabatan !== '' ? jabatan : '';
+            }
+
+            if (role === 'warga') {
+
+                const periodeEl = modalUbah.querySelector('select[name="id_periode"]');
+                if (periodeEl) periodeEl.value = '';
+
+                const noEl = modalUbah.querySelector('#ubah-no-kandidat');
+                if (noEl) noEl.value = '';
+
+                const jabatanEl = modalUbah.querySelector('#ubah-jabatan');
+                if (jabatanEl) jabatanEl.value = '';
+
+            } else {
+
+                const periodeEl = modalUbah.querySelector('select[name="id_periode"]');
+                if (periodeEl) periodeEl.value = id_periode !== '' ? id_periode : '';
+
+                const noEl = modalUbah.querySelector('#ubah-no-kandidat');
+                if (noEl) noEl.value = no_kandidat !== '' ? no_kandidat : '';
+
+                const jabatanEl = modalUbah.querySelector('#ubah-jabatan');
+                if (jabatanEl) jabatanEl.value = jabatan !== '' ? jabatan : '';
             }
 
         });

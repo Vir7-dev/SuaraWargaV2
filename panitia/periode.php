@@ -13,24 +13,39 @@ require_once '../koneksi.php';
 // ===========================
 if (isset($_POST['tambah'])) {
 
-    $nama_periode   = $_POST['nama_periode'];
-    $mulai          = $_POST['mulai'];
-    $selesai        = $_POST['selesai'];
+    $nama_periode   = trim($_POST['nama_periode']);
+    $mulai          = trim($_POST['mulai']);
+    $selesai        = trim($_POST['selesai']);
     $status_periode = $_POST['status_periode'] ?? 'tidak_aktif';
 
     try {
-        // (TAMBAH) check, ada periode aktif?
-        if ($status_periode === 'aktif') {
-            $checkQuery = "SELECT COUNT(*) FROM periode WHERE status_periode = 'aktif'";
-            $checkStmt = $pdo->query($checkQuery);
-            $activeCount = $checkStmt->fetchColumn();
 
-            if ($activeCount > 0) {
-                header("Location: periode.php?err=" . urlencode("Tidak dapat menambah periode aktif, Sudah ada periode yang aktif saat ini."));
-                exit;
-            }
+        // Cek apakah ada periode aktif
+        $cekAktif = $pdo->query("SELECT COUNT(*) FROM periode WHERE status_periode = 'aktif'")
+                        ->fetchColumn();
+
+        // Cek apakah ada periode tidak aktif
+        $cekTidakAktif = $pdo->query("SELECT COUNT(*) FROM periode WHERE status_periode = 'tidak_aktif'")
+                             ->fetchColumn();
+
+
+        // ============================================================
+        // LOGIKA BARU (AND LOGIC)
+        // TIDAK BOLEH TAMBAH APA PUN JIKA:
+        // - ADA periode aktif  (cekAktif > 0)
+        // - ATAU ADA periode tidak aktif (cekTidakAktif > 0)
+        // ============================================================
+
+        if ($cekAktif > 0 || $cekTidakAktif > 0) {
+            header("Location: periode.php?err=" . urlencode(
+                "Tidak dapat menambah periode baru. Selesaikan dulu periode sebelumnya."
+            ));
+            exit;
         }
 
+        // ============================================================
+        // JALANKAN INSERT (hanya jika keduanya kosong)
+        // ============================================================
         $query = "INSERT INTO periode (nama_periode, mulai, selesai, status_periode)
                   VALUES (?, ?, ?, ?)";
         $stmt = $pdo->prepare($query);
@@ -38,11 +53,13 @@ if (isset($_POST['tambah'])) {
 
         header("Location: periode.php?msg=added");
         exit;
+
     } catch (PDOException $e) {
         header("Location: periode.php?err=" . urlencode("Gagal menambah periode."));
         exit;
     }
 }
+
 
 // ===========================
 // UPDATE (EDIT) - POST
@@ -60,7 +77,7 @@ if (isset($_POST['edit'])) {
     }
 
     try {
-        // (EDIT) check, ada periode aktif?
+        // (EDIT) check: apakah ada periode aktif lain?
         if ($status_periode === 'aktif') {
             $checkQuery = "SELECT COUNT(*) FROM periode WHERE status_periode = 'aktif' AND id_periode != ?";
             $checkStmt = $pdo->prepare($checkQuery);
@@ -68,19 +85,28 @@ if (isset($_POST['edit'])) {
             $activeCount = $checkStmt->fetchColumn();
 
             if ($activeCount > 0) {
-                header("Location: periode.php?err=" . urlencode("Tidak dapat mengaktifkan periode, Sudah ada periode yang aktif saat ini."));
+                header("Location: periode.php?err=" . urlencode("Tidak dapat mengaktifkan periode, Sudah ada periode aktif saat ini."));
                 exit;
             }
         }
 
+        // UPDATE periode
         $query = "UPDATE periode SET
                     nama_periode = ?, mulai = ?, selesai = ?, status_periode = ?
                   WHERE id_periode = ?";
         $stmt = $pdo->prepare($query);
         $stmt->execute([$nama_periode, $mulai, $selesai, $status_periode, $id_periode]);
 
+        // ===============================
+        // RESET PEMILIHAN JIKA BERAKHIR
+        // ===============================
+        if ($status_periode === 'berakhir') {
+            include "reset_pemilihan.php"; // jalankan reset otomatis
+        }
+
         header("Location: periode.php?msg=updated");
         exit;
+
     } catch (PDOException $e) {
         header("Location: periode.php?err=" . urlencode("Gagal mengubah periode."));
         exit;
@@ -112,7 +138,7 @@ if (isset($_GET['hapus'])) {
 try {
     $stmt = $pdo->query("SELECT id_periode, nama_periode, mulai, selesai, status_periode 
                          FROM periode 
-                         ORDER BY id_periode DESC");
+                         ORDER BY mulai desc, status_periode asc");
     $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $periode_list = [];
@@ -187,7 +213,7 @@ try {
                 <?= htmlspecialchars($_GET['err']) ?>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        <?php endif; ?>
+        <?php endif; ?> 
 
         <div class="row">
             <div class="col-8">
@@ -224,18 +250,25 @@ try {
                                             <?php if ($data['status_periode'] == 'aktif'): ?>
                                                 <h6><span class="badge bg-success">Aktif</span></h6>
                                             <?php elseif ($data['status_periode'] == 'tidak_aktif'): ?>
-                                                <h6><span class="badge bg-danger">Tidak Aktif</span></h6>
+                                                <h6><span class="badge bg-danger">Persiapan</span></h6>
                                             <?php else: ?>
                                                 <h6><span class="badge bg-secondary">Berakhir</span></h6>
                                             <?php endif; ?>
                                         </td>
 
                                         <td>
-                                            <button type="button"
-                                                class="btn btn-sm btn-success"
-                                                onclick="window.location.href='../generate.php?id_periode=<?= htmlspecialchars($data['id_periode']) ?>'">
-                                                <i class="fa-solid fa-print"></i>
-                                            </button>
+                                            <?php if ($data['status_periode'] == 'berakhir'): ?>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-success me-2"
+                                                    onclick="window.location.href='../generate.php?id_periode=<?= htmlspecialchars($data['id_periode']) ?>'">
+                                                    <i class="fa-solid fa-print"></i>
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button"
+                                                    class="btn btn-sm btn-success me-2" disabled>
+                                                    <i class="fa-solid fa-print"></i>
+                                                </button>
+                                            <?php endif; ?>
                                             <button type="button" class="btn btn-sm btn-warning me-2"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#modal-ubah"
@@ -299,7 +332,7 @@ try {
                                 <div class="col-12 mb-3">
                                     <label class="col-form-label">Status</label>
                                     <select name="status_periode" class="form-control">
-                                        <option value="tidak_aktif" selected>Tidak Aktif</option>
+                                        <option value="tidak_aktif" selected>Persiapan</option>
                                     </select>
                                 </div>
                             </div>
@@ -403,31 +436,56 @@ try {
     <script src="../bootstrap/js/bootstrap.bundle.js"></script>
     <script>
         // ------------------------------------
-        // POPULATE MODAL UBAH
+        // POPULATE MODAL UBAH DENGAN LOGIKA STATUS
         // ------------------------------------
         const modalUbah = document.getElementById('modal-ubah');
+
         modalUbah.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
 
-            // Ambil data dari data-attributes
+            // Ambil data
             const id = button.getAttribute('data-id');
             const nama = button.getAttribute('data-nama');
             const mulai = button.getAttribute('data-mulai');
             const selesai = button.getAttribute('data-selesai');
             const status = button.getAttribute('data-status');
 
-            // Isi form modal
+            // Isi input teks biasa
             modalUbah.querySelector('#ubah-id').value = id || '';
             modalUbah.querySelector('#ubah-nama').value = nama || '';
             modalUbah.querySelector('#ubah-mulai').value = mulai || '';
             modalUbah.querySelector('#ubah-selesai').value = selesai || '';
-            modalUbah.querySelector('#ubah-status').value = status || 'tidak_aktif';
+
+            // Dropdown status
+            const statusSelect = modalUbah.querySelector('#ubah-status');
+
+            // Reset dropdown
+            statusSelect.innerHTML = '';
+
+            // Logika status sesuai keinginanmu
+            if (status === 'tidak_aktif') {
+                statusSelect.innerHTML += '<option value="tidak_aktif">Persiapan</option>';
+                statusSelect.innerHTML += '<option value="aktif">Aktif</option>';
+
+            } else if (status === 'aktif') {
+                statusSelect.innerHTML += '<option value="aktif">Aktif</option>';
+                statusSelect.innerHTML += '<option value="berakhir">Berakhir</option>';
+
+            } else if (status === 'berakhir') {
+                statusSelect.innerHTML += '<option value="berakhir">Berakhir</option>';
+            }
+
+            // Set value aktif
+            statusSelect.value = status;
         });
 
+
+
         // ------------------------------------
-        // MODAL HAPUS (SET LINK CONFIRM)
+        // MODAL HAPUS
         // ------------------------------------
         const modalHapus = document.getElementById('modal-hapus');
+
         modalHapus.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
             const idHapus = button.getAttribute('data-id-hapus');
@@ -436,6 +494,7 @@ try {
             btnYaHapus.href = 'periode.php?hapus=' + encodeURIComponent(idHapus);
         });
     </script>
+
 </body>
 
 </html>

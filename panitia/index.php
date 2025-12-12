@@ -16,58 +16,78 @@ if (!empty($_SESSION['reset_error'])) {
 require_once '../koneksi.php';
 
 // Inisialisasi variabel default
-$pengguna_list = [];
-$suara = [];
-$kandidat_ids = [];
-$pengguna_id = [];
-$total_suara = [];
+$periode_aktif = null;
+$kandidat_aktif = [];
+$suara_kandidat = [];
+$label_kandidat = [];
+$jumlah_suara = [];
 $error_fetch = '';
 
 try {
-    // Query kandidat - HAPUS TITIK KOMA DI AKHIR
-    $stmt = $pdo->query("SELECT
-        k.visi,
-        k.foto_profil,
-        k.misi,
-        k.foto_profil,
-        k.id_kandidat,
-        k.no_kandidat,
-        p.nama,
-        p.pendidikan,
-        p.pekerjaan,
-        p.alamat,
-        pr.nama_periode
-    FROM kandidat k
-    JOIN pengguna p ON k.pengguna_id = p.id
-    JOIN periode pr ON k.id_periode = pr.id_periode
-    WHERE pr.status_periode = 'aktif' ORDER BY k.no_kandidat asc");
 
-    $pengguna_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // --- 1. Ambil periode aktif (hanya 1) ---
+    $stmt = $pdo->query("SELECT * FROM periode WHERE status_periode = 'aktif' LIMIT 1");
+    $periode_aktif = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // JUMLAH SUARA
-    $stmt_suara = $pdo->query("SELECT 
-        k.id_kandidat,
-        k.pengguna_id,
-        p.nama,
-        COUNT(s.id_suara) AS total_suara
-    FROM kandidat k
-    LEFT JOIN suara s ON k.id_kandidat = s.kandidat_id 
-    LEFT JOIN pengguna p ON p.id = k.pengguna_id
-    GROUP BY k.id_kandidat, k.pengguna_id, p.nama");
+    // Jika tidak ada periode aktif → selesai
+    if (!$periode_aktif) {
+        $kandidat_aktif = [];
+        $suara_kandidat = [];
+    } else {
 
-    $suara = $stmt_suara->fetchAll(PDO::FETCH_ASSOC);
+        $id_periode = $periode_aktif['id_periode'];
 
-    // Pastikan $suara adalah array sebelum menggunakan array_column
-    if (is_array($suara) && !empty($suara)) {
-        $kandidat_ids = array_column($suara, 'id_kandidat');
-        $pengguna_id  = array_column($suara, 'nama');
-        $total_suara  = array_column($suara, 'total_suara');
+        // --- 2. Ambil semua kandidat di periode aktif ---
+        $stmt = $pdo->prepare("
+            SELECT 
+                k.id_kandidat,
+                k.no_kandidat,
+                k.jabatan,
+                k.visi,
+                k.misi,
+                k.foto_profil,
+                p.nama,
+                p.nik,
+                p.tempat_lahir,
+                p.tanggal_lahir,
+                p.jenis_kelamin,
+                p.pendidikan,
+                p.pekerjaan,
+                p.alamat,
+                p.agama
+            FROM kandidat k
+            JOIN pengguna p ON k.pengguna_id = p.id
+            WHERE k.id_periode = ?
+            ORDER BY k.no_kandidat ASC
+        ");
+        $stmt->execute([$id_periode]);
+        $kandidat_aktif = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // --- 3. Ambil jumlah suara tiap kandidat ---
+        $stmt_suara = $pdo->prepare("
+            SELECT 
+                k.id_kandidat,
+                p.nama,
+                COUNT(s.id_suara) AS total_suara
+            FROM kandidat k
+            LEFT JOIN suara s ON s.kandidat_id = k.id_kandidat
+            LEFT JOIN pengguna p ON p.id = k.pengguna_id
+            WHERE k.id_periode = ?
+            GROUP BY k.id_kandidat, p.nama
+        ");
+        $stmt_suara->execute([$id_periode]);
+        $suara_kandidat = $stmt_suara->fetchAll(PDO::FETCH_ASSOC);
+
+        // Untuk ChartJS
+        if (!empty($suara_kandidat)) {
+            $label_kandidat = array_column($suara_kandidat, 'nama');
+            $jumlah_suara = array_column($suara_kandidat, 'total_suara');
+        }
     }
 } catch (PDOException $e) {
-    // Tangani error pengambilan data
     $error_fetch = "Gagal mengambil data: " . $e->getMessage();
-    echo "<pre>Error Detail: " . $e->getMessage() . "</pre>"; // Untuk debugging
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -109,11 +129,17 @@ try {
                         <li class="nav-item">
                             <a href="index.php" class="btn btn-dark"><i class="fa-solid fa-house me-2"></i>BERANDA</a>
                         </li>
-                        <li class="nav-item">
-                            <a
-                                class="btn btn-dark" aria-current="page" href="#"
-                                data-bs-toggle="modal" data-bs-target="#modal-ambil-token"><i class="fa-solid fa-ticket me-2"></i>TOKEN</a>
-                        </li>
+                        <?php if ($periode_aktif): ?>
+                            <li class="nav-item">
+                                <a class="btn btn-dark"
+                                    href="#"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modal-ambil-token">
+                                    <i class="fa-solid fa-ticket me-2"></i>TOKEN
+                                </a>
+                            </li>
+                        <?php endif; ?>
+
                         <li class="nav-item">
                             <a href="pengguna.php" class="btn btn-dark"><i class="fa-solid fa-users me-2"></i>PENGGUNA</a>
                         </li>
@@ -157,15 +183,16 @@ try {
 
     <!-- Card Kandidat -->
     <div class="container mb-5">
-        <?php if (!empty($pengguna_list)): ?>
-            <h2 class="text-center poppins-bold mb-5"><?= ($pengguna_list[0]['nama_periode']) ?></h2>
+        <?php if ($periode_aktif): ?>
+            <h2 class="text-center poppins-bold mb-5">
+                Hasil <?= htmlspecialchars($periode_aktif['nama_periode']) ?>
+            </h2>
         <?php else: ?>
-            <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dimulai</h2>
+            <h2 class="text-center poppins-bold mb-5">Periode pemilihan belum dimulai</h2>
         <?php endif; ?>
         <div class="row mb-5">
-
-            <?php if (!empty($pengguna_list)): ?>
-                <?php foreach ($pengguna_list as $data): ?>
+            <?php if (!empty($kandidat_aktif)): ?>
+                <?php foreach ($kandidat_aktif as $data): ?>
                     <div data-aos="flip-right" class="col-lg-3 col-md-5 col-11 mx-auto">
                         <div class="card rounded-4 card-bg mb-5">
 
@@ -237,82 +264,47 @@ try {
                     </div>
 
                     <!-- Modal Kandidat -->
-                    <div class="modal fade" id="modal-profil-<?= htmlspecialchars($data['id_kandidat']) ?>" tabindex="-1">
+                    <div class="modal fade" id="modal-profil-<?= $data['id_kandidat'] ?>" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-xl">
                             <div class="modal-content bg-putih rounded-4">
                                 <div class="modal-body">
+
                                     <div class="text-end">
                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                     </div>
 
-                                    <div class="container-fluid">
-                                        <div class="row d-flex">
+                                    <div class="row">
+                                        <div class="col-lg-3 col-12">
 
-                                            <!-- Kiri -->
-                                            <div class="col-lg-3 col-12">
-                                                <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
-                                                    class="rounded-4 d-block mx-auto mb-3 img-fit">
+                                            <img src="../uploads/<?= htmlspecialchars($data['foto_profil']) ?>"
+                                                class="rounded-4 d-block mx-auto mb-3 img-fit">
 
-                                                <h1 class="card-title poppins-semibold">
-                                                    <?= htmlspecialchars($data['no_kandidat']) ?>
-                                                </h1>
+                                            <h2 class="poppins-bold">No. <?= $data['no_kandidat'] ?></h2>
 
-                                                <hr>
-                                                <p class="card-title poppins-bold">Nama</p>
-                                                <p><?= htmlspecialchars($data['nama']) ?></p>
+                                            <hr>
+                                            <p class="poppins-bold">Nama</p>
+                                            <p><?= $data['nama'] ?></p>
 
-                                                <hr>
-                                                <p class="card-title poppins-bold">Pendidikan</p>
-                                                <p><?= htmlspecialchars($data['pendidikan']) ?></p>
+                                            <hr>
+                                            <p class="poppins-bold">Tempat / Tanggal Lahir</p>
+                                            <p><?= $data['tempat_lahir'] ?>, <?= $data['tanggal_lahir'] ?></p>
 
-                                                <hr>
-                                                <p class="card-title poppins-bold">Pekerjaan</p>
-                                                <p><?= htmlspecialchars($data['pekerjaan']) ?></p>
+                                            <hr>
+                                            <p class="poppins-bold">Jenis Kelamin</p>
+                                            <?php echo ($data['jenis_kelamin'] === 'P') ? "Perempuan" : "Laki-laki"; ?>
 
-                                                <hr>
-                                                <p class="card-title poppins-bold">Alamat</p>
-                                                <p><?= htmlspecialchars($data['alamat']) ?></p><br>
+                                            <hr>
+                                            <p class="poppins-bold">Agama</p>
+                                            <p><?= $data['agama'] ?></p>
 
-                                                <div class="d-grid gap-2">
-                                                    <?php
-                                                    $user_id = $_SESSION['user_id'];
+                                        </div>
 
-                                                    $stmt = $pdo->prepare("SELECT status_pilih FROM pengguna WHERE id = ?");
-                                                    $stmt->execute([$user_id]);
-                                                    $status_pilih = $stmt->fetchColumn();
-                                                    ?>
+                                        <div class="col-lg-9 col-12">
+                                            <h3 class="poppins-bold">Visi</h3>
+                                            <p><?= nl2br(htmlspecialchars($data['visi'])) ?></p>
 
-                                                    <?php if ($status_pilih === 'sudah'): ?>
-
-                                                        <!-- Jika sudah memilih -->
-                                                        <a href="#" class="btn btn-secondary"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#modal-sudah-vote">
-                                                            PILIH
-                                                        </a>
-
-                                                    <?php else: ?>
-
-                                                        <!-- Jika BELUM memilih -->
-                                                        <a href="#" class="btn btn-dark"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>">
-                                                            PILIH
-                                                        </a>
-
-                                                    <?php endif; ?>
-                                                </div>
-                                            </div>
-
-                                            <!-- Kanan -->
-                                            <div class="col-lg-9 col-12 mt-4">
-                                                <h4 class="poppins-bold">Visi</h4>
-                                                <p><?= htmlspecialchars($data['visi']) ?></p>
-
-                                                <h4 class="poppins-bold mt-4">Misi</h4>
-                                                <p><?= htmlspecialchars($data['misi']) ?></p>
-                                            </div>
-
+                                            <h3 class="poppins-bold mt-4">Misi</h3>
+                                            <p><?= nl2br(htmlspecialchars($data['misi'])) ?></p>
                                         </div>
                                     </div>
 
@@ -320,8 +312,6 @@ try {
                             </div>
                         </div>
                     </div>
-
-                    <!-- Modal Kandidat -->
 
                 <?php endforeach; ?>
             <?php else: ?>
@@ -333,84 +323,101 @@ try {
 
     <!-- Diagram -->
     <div class="container col-lg-12 col-10 mb-5">
-        <?php if (!empty($pengguna_list)): ?>
-            <h2 class="text-center poppins-bold mb-5">Hasil <?= ($pengguna_list[0]['nama_periode']) ?></h2>
-        <?php else: ?>
-            <h2 class="text-center poppins-bold mb-5">Pemilihan Belum Dihitung</h2>
-        <?php endif; ?>
-        <div class="row p-3 py-4 gap-4 gap-md-0 rounded-4 card-bg">
-            <div class="col-12 flex-md-row flex-column d-flex justify-content-between align-items-center mb-3">
-                <h2 class="text-left poppins-bold text-putih">Hasil Pemilihan</h2>
-            </div>
-            <div class="col-lg-8">
 
-                <div class="d-flex justify-content-around bg-chart gap-lg-4 gap-3 p-1 px-md-4 py-4 rounded-4 bg-putih h-100">
-                    <canvas id="myChart" style="width: 100%;"></canvas>
-                    <script>
-                        var xValues = <?php echo json_encode($pengguna_id); ?>;
-                        var yValues = <?php echo json_encode($total_suara); ?>;
-                        var barColors = ["red", "green", "blue", "orange", "brown"];
+        <?php if ($periode_aktif && !empty($label_kandidat) && !empty($jumlah_suara)): ?>
 
-                        new Chart("myChart", {
-                            type: "bar",
-                            data: {
-                                labels: xValues,
-                                datasets: [{
-                                    backgroundColor: barColors,
-                                    data: yValues
-                                }]
-                            },
-                            options: {
-                                legend: {
-                                    display: false
-                                },
-                                title: {
-                                    display: true,
-                                    text: "TOTAL SUARA"
-                                },
-                                scales: {
-                                    yAxes: [{
-                                        ticks: {
-                                            beginAtZero: true
-                                        }
+            <h2 class="text-center poppins-bold mb-5">
+                Hasil <?= htmlspecialchars($periode_aktif['nama_periode']) ?>
+            </h2>
+
+            <div class="row p-3 py-4 gap-4 gap-md-0 rounded-4 card-bg">
+                <div class="col-12 flex-md-row flex-column d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="text-left poppins-bold text-putih">Hasil Pemilihan Sementara</h2>
+                </div>
+
+                <!-- BAR CHART -->
+                <div class="col-lg-8">
+                    <div class="d-flex justify-content-around bg-chart gap-lg-4 gap-3 p-1 px-md-4 py-4 rounded-4 bg-putih h-100">
+
+                        <canvas id="myChart" style="width: 100%;"></canvas>
+
+                        <script>
+                            var xValues = <?= json_encode($label_kandidat); ?>;
+                            var yValues = <?= json_encode($jumlah_suara); ?>;
+                            var barColors = ["red", "green", "blue", "orange", "brown"];
+
+                            new Chart("myChart", {
+                                type: "bar",
+                                data: {
+                                    labels: xValues,
+                                    datasets: [{
+                                        backgroundColor: barColors,
+                                        data: yValues
                                     }]
-                                }
-                            }
-                        });
-                    </script>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="d-flex justify-content-around bg-chart gap-lg-4 gap-3 p-1 px-md-4 py-4 rounded-4 bg-putih h-100">
-                    <canvas id="myChart1" style="width: 100%; height: 100%;"></canvas>
-                    <script>
-                        var xValues = <?php echo json_encode($pengguna_id); ?>;
-                        var yValues = <?php echo json_encode($total_suara); ?>;
-                        var barColors = ["red", "green", "blue", "orange", "brown"];
-
-                        new Chart("myChart1", {
-                            type: "doughnut",
-                            data: {
-                                labels: xValues,
-                                datasets: [{
-                                    backgroundColor: barColors,
-                                    data: yValues
-                                }]
-                            },
-                            options: {
-                                legend: {
-                                    display: false
                                 },
-                                title: {
-                                    display: true,
-                                    text: "TOTAL SUARA"
+                                options: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: "TOTAL SUARA"
+                                    },
+                                    scales: {
+                                        yAxes: [{
+                                            ticks: {
+                                                beginAtZero: true
+                                            }
+                                        }]
+                                    }
                                 }
-                            }
-                        });
-                    </script>
+                            });
+                        </script>
+
+                    </div>
                 </div>
+
+                <!-- PIE / DONUT CHART -->
+                <div class="col-lg-4">
+                    <div class="d-flex justify-content-around bg-chart gap-lg-4 gap-3 p-1 px-md-4 py-4 rounded-4 bg-putih h-100">
+
+                        <canvas id="myChart1" style="width: 100%; height: 100%;"></canvas>
+
+                        <script>
+                            var xValues = <?= json_encode($label_kandidat); ?>;
+                            var yValues = <?= json_encode($jumlah_suara); ?>;
+                            var barColors = ["red", "green", "blue", "orange", "brown"];
+
+                            new Chart("myChart1", {
+                                type: "doughnut",
+                                data: {
+                                    labels: xValues,
+                                    datasets: [{
+                                        backgroundColor: barColors,
+                                        data: yValues
+                                    }]
+                                },
+                                options: {
+                                    legend: {
+                                        display: true
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: "TOTAL SUARA"
+                                    }
+                                }
+                            });
+                        </script>
+
+                    </div>
+                </div>
+
             </div>
-        </div>
+
+        <?php else: ?>
+
+        <?php endif; ?>
+
     </div>
 
     <!-- Modal -->
@@ -491,7 +498,7 @@ try {
         </div>
 
         <!-- Modal Pilih Kandidat -->
-        <?php foreach ($pengguna_list as $data): ?>
+        <?php foreach ($kandidat_aktif as $data): ?>
             <div class="modal fade" id="modal-pilih-<?= htmlspecialchars($data['id_kandidat']) ?>" tabindex="-1">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content bg-putih rounded-4">
