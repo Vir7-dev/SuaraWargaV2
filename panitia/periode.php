@@ -143,6 +143,7 @@ try {
 } catch (PDOException $e) {
     $periode_list = [];
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
