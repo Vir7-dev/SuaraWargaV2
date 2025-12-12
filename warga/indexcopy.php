@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'kandidat') {
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'panitia') {
     header("Location: ../login.php");
     exit;
 }
@@ -97,7 +97,6 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUARAWARGA</title>
-    <link rel="icon" type="image/png" href="../assets/img/logo.png">
     <link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../style.css">
     <link rel="stylesheet" href="../fontawesome/css/all.min.css">
@@ -140,8 +139,12 @@ try {
                                 </a>
                             </li>
                         <?php endif; ?>
+
                         <li class="nav-item">
-                            <a href="profil.php" class="btn btn-dark"><i class="fa-solid fa-address-card me-2"></i>PROFIL</a>
+                            <a href="pengguna.php" class="btn btn-dark"><i class="fa-solid fa-users me-2"></i>PENGGUNA</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="periode.php" class="btn btn-dark"><i class="fa-solid fa-calendar-day me-2"></i>PERIODE</a>
                         </li>
                         <li class="nav-item">
                             <a class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modal-reset-password" href="#"><i class="fa-solid fa-key me-2"></i>RESET PASSWORD</a>
@@ -182,7 +185,7 @@ try {
     <div class="container mb-5">
         <?php if ($periode_aktif): ?>
             <h2 class="text-center poppins-bold mb-5">
-                <?= htmlspecialchars($periode_aktif['nama_periode']) ?>
+                Hasil <?= htmlspecialchars($periode_aktif['nama_periode']) ?>
             </h2>
         <?php else: ?>
             <h2 class="text-center poppins-bold mb-5">Periode pemilihan belum dimulai</h2>
