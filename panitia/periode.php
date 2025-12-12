@@ -138,7 +138,7 @@ if (isset($_GET['hapus'])) {
 try {
     $stmt = $pdo->query("SELECT id_periode, nama_periode, mulai, selesai, status_periode 
                          FROM periode 
-                         ORDER BY mulai desc, status_periode asc");
+                         ORDER BY status_periode asc, mulai desc");
     $periode_list = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $periode_list = [];
