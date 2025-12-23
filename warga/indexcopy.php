@@ -14,7 +14,7 @@ if (!empty($_SESSION['reset_error'])) {
 }
 
 require_once '../koneksi.php';
-require_once '../SuaraWargaV2/auto_check_periode.php';
+require_once '../auto_check_periode.php';
 
 // Inisialisasi variabel default
 $periode_aktif = null;

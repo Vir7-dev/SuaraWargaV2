@@ -1,27 +1,19 @@
 <?php
-echo "<div style='background:yellow;padding:10px;border:2px solid red;'>
-🔥 AUTO CHECK PERIODE DIJALANKAN!
-</div>";
+/**
+ * AUTO CHECK PERIODE
+ * Otomatis ubah status periode jadi 'berakhir' jika tanggal sudah lewat
+ */
 
 if (!isset($pdo)) {
-    die("❌ Koneksi database tidak ditemukan");
+    die("Koneksi database tidak ditemukan");
 }
 
 try {
-    $query = "UPDATE periode 
-              SET status_periode = 'berakhir' 
-              WHERE status_periode = 'aktif' 
-              AND DATE(selesai) < CURDATE()";
-    
-    $affected = $pdo->exec($query);
-    
-    echo "<div style='background:lime;padding:10px;'>
-    ✅ Query dijalankan! Rows affected: $affected
-    </div>";
-    
+    $pdo->exec("UPDATE periode 
+                SET status_periode = 'berakhir' 
+                WHERE status_periode = 'aktif' 
+                AND DATE(selesai) < CURDATE()");
 } catch (PDOException $e) {
-    echo "<div style='background:red;color:white;padding:10px;'>
-    ❌ ERROR: " . $e->getMessage() . "
-    </div>";
+    // Silent error
 }
 ?>
