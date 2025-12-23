@@ -7,6 +7,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION[
 }
 
 require_once '../koneksi.php';
+require_once '../auto_check_periode.php';
 
 // ===========================
 // INSERT (TAMBAH) - POST
