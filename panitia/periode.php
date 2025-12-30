@@ -65,6 +65,9 @@ if (isset($_POST['tambah'])) {
 // ===========================
 // UPDATE (EDIT) - POST
 // ===========================
+// ===========================
+// UPDATE (EDIT) - POST
+// ===========================
 if (isset($_POST['edit'])) {
     $id_periode     = $_POST['id_periode'] ?? null;
     $nama_periode   = trim($_POST['nama_periode'] ?? '');
@@ -99,11 +102,8 @@ if (isset($_POST['edit'])) {
         $stmt->execute([$nama_periode, $mulai, $selesai, $status_periode, $id_periode]);
 
         // ===============================
-        // RESET PEMILIHAN JIKA BERAKHIR
+        // RESET DIHAPUS - Sekarang dihandle oleh auto_check_periode.php
         // ===============================
-        if ($status_periode === 'berakhir') {
-            include "reset_pemilihan.php"; // jalankan reset otomatis
-        }
 
         header("Location: periode.php?msg=updated");
         exit;
